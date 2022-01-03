@@ -8,6 +8,13 @@
 
 > A [Feathers](https://feathersjs.com) service adapter for [Prisma](prisma.io) ORM.
 
+> !!! This plugin is currently under development! It is usable but you have to be aware of it.
+
+Following things are missing before going productive:
+
+- Finish tests
+- Add example
+
 ## Installation
 
 ```
