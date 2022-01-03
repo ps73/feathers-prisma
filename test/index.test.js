@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const plugin = require('../lib');
+const { prismaService: plugin } = require('../dist');
 
 describe('feathers-prisma', () => {
   it('basic functionality', () => {
