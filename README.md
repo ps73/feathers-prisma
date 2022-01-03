@@ -6,7 +6,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/ps73/feathers-prisma/badge.svg?branch=main)](https://coveralls.io/github&ps73/feathers-prisma?branch=main)
 [![npm](https://img.shields.io/npm/v/feathers-prisma.svg?maxAge=3600)](https://www.npmjs.com/package/feathers-prisma)
 
-> A [Feathers](https://feathersjs.com) service adapter for [Prisma](prisma.io) orm that works on server.
+> A [Feathers](https://feathersjs.com) service adapter for [Prisma](prisma.io) ORM.
 
 ## Installation
 
@@ -16,25 +16,149 @@ npm install feathers-prisma --save
 
 ## Documentation
 
-TBD
+This adapter supports all methods (`create`, `delete`, `update`, `patch`, `find`, `get`) and the common way for querying (`equality`, `$limit`, `$skip`, `$sort`, `$select`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, `$gte`, `$ne`, `$or`). Also we support eager loading (`$eager`).
 
-## Complete Example
-
-Here's an example of a Feathers server that uses `feathers-prisma`. 
+### Setup
 
 ```js
-const feathers = require('@feathersjs/feathers');
-const prisma = require('feathers-prisma');
+import feathers from "@feathersjs/feathers";
+import { prismaService } from "feathers-prisma";
 
 // Initialize the application
 const app = feathers();
 
 // Initialize the plugin
-app.configure(prisma());
+const prismaClient = new PrismaClient();
+prismaClient.$connect();
+app.set("prisma", prismaClient);
+
+const paginate = {
+  default: 10,
+  max: 50,
+};
+
+app.use(
+  "/messages",
+  prismaService(
+    {
+      model: "messages",
+      paginate,
+      multi: ["create", "patch", "remove"],
+      whitelist: ["$eager"],
+    },
+    prismaClient
+  )
+);
+```
+
+### Eager Loading / Relation Queries
+
+Relations can be resolved via `$eager` property in your query. It supports also deep relations. The `$eager` property **has to be** set in the `whitelist` option parameter. Otherwise the service will throw an error.
+
+```js
+app.use(
+  "/messages",
+  prismaService(
+    {
+      model: "message",
+      whitelist: ["$eager"],
+    },
+    prismaClient
+  )
+);
+// will load the recipients with the related user
+// as well as all attachments  of the messages
+app.service("messages").find({
+  query: {
+    $eager: [["recipients", ["user"]], "attachments"],
+  },
+});
+```
+
+### Batch requests
+
+This adapter supports batch requests. This is possible by allowing this in the `multi` property in the service options. Supported methods are `create`, `patch` and `delete`.
+
+```js
+app.use(
+  "/messages",
+  prismaService(
+    {
+      model: "messages",
+      multi: ["create", "patch", "delete"],
+    },
+    prismaClient
+  )
+);
+
+app.service("messages").create([{ body: "Lorem" }, { body: "Ipsum" }]);
+```
+
+### Full-Text Search
+
+Prisma supports a full-text search which is currently in preview mode. Find out more how to activate it [here](https://www.prisma.io/docs/concepts/components/prisma-client/full-text-search). If you activated it through your schema you have to allow it in the `whitelist` property:
+
+```js
+app.use(
+  "/messages",
+  prismaService(
+    {
+      model: "messages",
+      whitelist: ["$search"],
+    },
+    prismaClient
+  )
+);
+
+app.service("messages").find({
+  query: {
+    body: {
+      $search: "hello | hola",
+    },
+  },
+});
+```
+
+## Complete Example
+
+Here's an example of a Feathers server that uses `feathers-prisma`.
+
+```js
+import feathers from "@feathersjs/feathers";
+import { prismaService } from "feathers-prisma";
+
+// Initialize the application
+const app = feathers();
+
+// Initialize the plugin
+const prismaClient = new PrismaClient();
+prismaClient.$connect();
+app.set("prisma", prismaClient);
+
+const paginate = {
+  default: 10,
+  max: 50,
+};
+
+app.use(
+  "/messages",
+  prismaService(
+    {
+      model: "messages",
+      paginate,
+      multi: ["create", "patch", "remove"],
+      whitelist: ["$eager"],
+    },
+    prismaClient
+  )
+);
+
+// Or if you want to extend the service class
+import { PrismaService } from "feathers-prisma";
 ```
 
 ## License
 
-Copyright (c) 2021
+Copyright (c) 2021.
 
 Licensed under the [MIT license](LICENSE).
