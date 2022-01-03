@@ -16,7 +16,7 @@ npm install feathers-prisma --save
 
 ## Documentation
 
-This adapter supports all methods (`create`, `delete`, `update`, `patch`, `find`, `get`) and the common way for querying (`equality`, `$limit`, `$skip`, `$sort`, `$select`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, `$gte`, `$ne`, `$or`). Also we support eager loading (`$eager`).
+This adapter supports all methods (`create`, `delete`, `update`, `patch`, `find`, `get`) and the common way for querying (`equality`, `$limit`, `$skip`, `$sort`, `$select`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, `$gte`, `$ne`, `$or`). Also supports eager loading (`$eager`) and full-text search (`$search`).
 
 ### Setup
 
