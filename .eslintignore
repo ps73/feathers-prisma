@@ -1,0 +1,7 @@
+# *
+lib/
+types/
+node_modules
+!src/
+example/
+dist/

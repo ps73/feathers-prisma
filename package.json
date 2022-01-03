@@ -1,10 +1,25 @@
 {
   "name": "feathers-prisma",
-  "description": "A Feathers service adapter for Prisma orm that works on server.",
+  "description": "A Feathers service adapter for Prisma ORM.",
   "version": "0.0.0",
   "homepage": "https://github.com/ps73/feathers-prisma",
-  "main": "lib/",
-  "keywords": ["feathers", "prisma", "feathers-plugin", "postgresql", "mariadb", "mysql", "mssql", "sqlite", "aurora", "azure-sql"],
+  "main": "dist/",
+  "types": "dist/",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "feathers",
+    "prisma",
+    "feathers-plugin",
+    "postgresql",
+    "mariadb",
+    "mysql",
+    "mssql",
+    "sqlite",
+    "aurora",
+    "azure-sql"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -20,18 +35,22 @@
     "url": "https://github.com/ps73/feathers-prisma/issues"
   },
   "engines": {
-    "node": ">= 6.0.0"
+    "node": ">= 12"
   },
   "scripts": {
-    "publish": "git push origin --tags && npm run changelog && git push origin",
+    "generate": "prisma generate",
+    "compile": "tsc",
+    "dev": "./node_modules/nodemon/bin/nodemon.js -e ts --watch src --exec \"npm run compile\"",
+    "prepublish": "npm run test && npm run compile",
+    "publish": "git push origin --tags && npm run changelog && npm run types && git push origin",
     "release:pre": "npm version prerelease && npm publish --tag pre",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",
     "changelog": "github_changelog_generator && git add CHANGELOG.md && git commit -am \"Updating changelog\"",
-    "lint": "semistandard lib/*.js lib/**/*.js test/*.js test/**/*.js --fix",
+    "lint": "eslint src/*.ts src/**/*.ts test/*.js test/**/*.js --fix",
     "mocha": "mocha --opts mocha.opts",
-    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --opts mocha.opts",
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --config=.mocharc.json",
     "test": "npm run lint && npm run coverage"
   },
   "semistandard": {
@@ -42,10 +61,23 @@
   "directories": {
     "lib": "lib"
   },
+  "dependencies": {
+    "@feathersjs/adapter-commons": "^4.5.11",
+    "@feathersjs/errors": "^4.5.11",
+    "@prisma/client": "^3.7.0"
+  },
   "devDependencies": {
+    "@types/node": "^17.0.5",
+    "@typescript-eslint/eslint-plugin": "^5.8.1",
+    "@typescript-eslint/parser": "^5.8.1",
     "chai": "^3.5.0",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.3",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^9.1.3",
-    "semistandard": "^16.0.1"
+    "nodemon": "^2.0.15",
+    "semistandard": "^16.0.1",
+    "typescript": "^4.5.4"
   }
 }

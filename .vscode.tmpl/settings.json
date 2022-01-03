@@ -1,0 +1,17 @@
+{
+  "eslint.workingDirectories": ["./", "./example"],
+  "[javascript]": {
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "javascript.format.enable": false,
+  "javascript.validate.enable": true,
+  "javascript.updateImportsOnFileMove.enabled": "prompt",
+  "javascript.suggestionActions.enabled": false,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+  },
+}
