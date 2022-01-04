@@ -51,7 +51,7 @@
     "lint": "eslint src/*.ts src/**/*.ts test/*.js test/**/*.js --fix",
     "mocha": "mocha --opts mocha.opts",
     "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --config=.mocharc.json",
-    "test": "npm run lint && npm run coverage"
+    "test": "npm run compile && npm run lint && npm run coverage"
   },
   "semistandard": {
     "env": [
@@ -67,6 +67,8 @@
     "@prisma/client": "^3.7.0"
   },
   "devDependencies": {
+    "@feathersjs/express": "^4.5.11",
+    "@feathersjs/feathers": "^4.5.11",
     "@types/node": "^17.0.5",
     "@typescript-eslint/eslint-plugin": "^5.8.1",
     "@typescript-eslint/parser": "^5.8.1",
@@ -79,5 +81,8 @@
     "nodemon": "^2.0.15",
     "semistandard": "^16.0.1",
     "typescript": "^4.5.4"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
   }
 }

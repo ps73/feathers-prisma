@@ -30,6 +30,7 @@ This adapter supports all methods (`create`, `delete`, `update`, `patch`, `find`
 ```js
 import feathers from "@feathersjs/feathers";
 import { service } from "feathers-prisma";
+import { PrismaClient } from "@prisma/client";
 
 // Initialize the application
 const app = feathers();
@@ -159,7 +160,9 @@ app.use(
     prismaClient
   )
 );
+```
 
+```js
 // Or if you want to extend the service class
 import { PrismaService } from "feathers-prisma";
 ```
