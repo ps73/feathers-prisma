@@ -150,6 +150,8 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
   }
 }
 
-export function prismaService<ModelData = Record<string, any>>(options: PrismaServiceOptions, client: PrismaClient) {
+export function service<ModelData = Record<string, any>>(options: PrismaServiceOptions, client: PrismaClient) {
   return new PrismaService<ModelData>(options, client);
 }
+
+export const prismaService = service;

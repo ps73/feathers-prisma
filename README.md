@@ -29,7 +29,7 @@ This adapter supports all methods (`create`, `delete`, `update`, `patch`, `find`
 
 ```js
 import feathers from "@feathersjs/feathers";
-import { prismaService } from "feathers-prisma";
+import { service } from "feathers-prisma";
 
 // Initialize the application
 const app = feathers();
@@ -46,7 +46,7 @@ const paginate = {
 
 app.use(
   "/messages",
-  prismaService(
+  service(
     {
       model: "messages",
       paginate,
@@ -65,7 +65,7 @@ Relations can be resolved via `$eager` property in your query. It supports also 
 ```js
 app.use(
   "/messages",
-  prismaService(
+  service(
     {
       model: "message",
       whitelist: ["$eager"],
@@ -89,7 +89,7 @@ This adapter supports batch requests. This is possible by allowing this in the `
 ```js
 app.use(
   "/messages",
-  prismaService(
+  service(
     {
       model: "messages",
       multi: ["create", "patch", "delete"],
@@ -108,7 +108,7 @@ Prisma supports a full-text search which is currently in preview mode. Find out 
 ```js
 app.use(
   "/messages",
-  prismaService(
+  service(
     {
       model: "messages",
       whitelist: ["$search"],
@@ -132,7 +132,7 @@ Here's an example of a Feathers server that uses `feathers-prisma`.
 
 ```js
 import feathers from "@feathersjs/feathers";
-import { prismaService } from "feathers-prisma";
+import { service } from "feathers-prisma";
 
 // Initialize the application
 const app = feathers();
@@ -149,7 +149,7 @@ const paginate = {
 
 app.use(
   "/messages",
-  prismaService(
+  service(
     {
       model: "messages",
       paginate,
