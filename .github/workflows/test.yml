@@ -1,0 +1,33 @@
+name: Run tests
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: ['*']
+jobs:
+  build:
+    name: 'Run tests'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12, 14, 16, 17]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: restore caches
+      uses: actions/cache@v2
+      with:
+        path: |
+          ./node_modules
+          ./.coverage
+          ./.eslintcache
+        key: ${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+    - name: Run tests
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm install && npm run lint -- --cache && npm run test
