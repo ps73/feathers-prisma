@@ -51,7 +51,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 this.Model.findMany(Object.assign({ skip,
                     take,
                     orderBy,
-                    where }, (select ? { select } : include ? { include } : {}))),
+                    where }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
                 this.Model.count({
                     where,
                 }),
@@ -70,9 +70,9 @@ class PrismaService extends adapter_commons_1.AdapterService {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
             const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                query: Object.assign({ id }, query), filters, whitelist,
+                id, query, filters, whitelist,
             });
-            const result = yield this.Model.findUnique(Object.assign({ where }, (select ? { select } : include ? { include } : {})));
+            const result = yield this.Model.findUnique(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
             return result;
         });
     }
@@ -82,10 +82,10 @@ class PrismaService extends adapter_commons_1.AdapterService {
             const { whitelist } = this.options;
             const { select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist });
             if (Array.isArray(data)) {
-                const result = yield this.client.$transaction(data.map((d) => this.Model.create(Object.assign({ data: d }, (select ? { select } : include ? { include } : {})))));
+                const result = yield this.client.$transaction(data.map((d) => this.Model.create(Object.assign({ data: d }, (0, utils_1.buildSelectOrInclude)({ select, include })))));
                 return result;
             }
-            const result = yield this.Model.create(Object.assign({ data }, (select ? { select } : include ? { include } : {})));
+            const result = yield this.Model.create(Object.assign({ data }, (0, utils_1.buildSelectOrInclude)({ select, include })));
             return result;
         });
     }
@@ -94,10 +94,10 @@ class PrismaService extends adapter_commons_1.AdapterService {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
             const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                query: Object.assign({ id }, query), filters, whitelist,
+                id, query, filters, whitelist,
             });
             const result = yield this.Model.update(Object.assign({ data,
-                where }, (select ? { select } : include ? { include } : {})));
+                where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
             return result;
         });
     }
@@ -111,7 +111,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
             const { whitelist } = this.options;
             const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist });
             const result = yield this.Model.updateMany(Object.assign({ data,
-                where }, (select ? { select } : include ? { include } : {})));
+                where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
             return result;
         });
     }
@@ -121,13 +121,13 @@ class PrismaService extends adapter_commons_1.AdapterService {
             const { whitelist } = this.options;
             if (id) {
                 const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                    query: Object.assign({ id }, query), filters, whitelist,
+                    id, query, filters, whitelist,
                 });
-                const result = yield this.Model.delete(Object.assign({ where }, (select ? { select } : include ? { include } : {})));
+                const result = yield this.Model.delete(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
                 return result;
             }
             const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist });
-            const result = yield this.Model.deleteMany(Object.assign({ where }, (select ? { select } : include ? { include } : {})));
+            const result = yield this.Model.deleteMany(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
             return result;
         });
     }

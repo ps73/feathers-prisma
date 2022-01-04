@@ -1,5 +1,5 @@
 import { OPERATORS_MAP } from './constants';
-import { EagerQuery, QueryParam, QueryParamRecordFilters } from './types';
+import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
 export const castToNumberBooleanStringOrNull = (value: string | boolean | number) => {
   const asNumber = Number(value);
@@ -97,14 +97,15 @@ export const buildPagination = ($skip: number, $limit: number) => {
   };
 };
 
-export const buildPrismaQueryParams = ({ query, filters, whitelist }: {
+export const buildPrismaQueryParams = ({ id, query, filters, whitelist }: {
+  id?: IdField,
   query: Record<string, any>,
   filters: Record<string, any>,
   whitelist: string[],
 }) => {
   let select = buildSelect(filters.$select || []);
   const selectExists = Object.keys(select).length > 0;
-  const { where, include } = buildWhereAndInclude(query, whitelist);
+  const { where, include } = buildWhereAndInclude(id ? { id, ...query } : query, whitelist);
   const includeExists = Object.keys(include).length > 0;
   const orderBy = buildOrderBy(filters.$sort || {});
   const { skip, take } = buildPagination(filters.$skip, filters.$limit);
@@ -140,4 +141,10 @@ export const buildPrismaQueryParams = ({ query, filters, whitelist }: {
     orderBy,
     where,
   };
+};
+
+export const buildSelectOrInclude = (
+  { select, include }: { select?: Record<string, boolean>; include?: Record<string, any> },
+) => {
+  return select ? { select } : include ? { include } : {};
 };

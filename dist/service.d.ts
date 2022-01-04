@@ -1,8 +1,7 @@
 import type { Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import { PrismaClient } from '@prisma/client';
-import { ManyResult, PrismaServiceOptions } from './types';
-declare type IdField = string | number | null;
+import { IdField, ManyResult, PrismaServiceOptions } from './types';
 export declare class PrismaService<ModelData = Record<string, any>> extends AdapterService {
     Model: any;
     client: PrismaClient;
@@ -17,4 +16,3 @@ export declare class PrismaService<ModelData = Record<string, any>> extends Adap
 }
 export declare function service<ModelData = Record<string, any>>(options: PrismaServiceOptions, client: PrismaClient): PrismaService<ModelData>;
 export declare const prismaService: typeof service;
-export {};

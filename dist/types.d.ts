@@ -1,4 +1,5 @@
 export declare type PrismaClient = any;
+export declare type IdField = string | number | null;
 export declare type Paginate = {
     default?: number;
     max?: number;

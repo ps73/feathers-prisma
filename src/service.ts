@@ -2,11 +2,9 @@ import type { Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import * as errors from '@feathersjs/errors';
 import { PrismaClient } from '@prisma/client';
-import { ManyResult, PrismaServiceOptions } from './types';
-import { buildPrismaQueryParams } from './utils';
+import { IdField, ManyResult, PrismaServiceOptions } from './types';
+import { buildPrismaQueryParams, buildSelectOrInclude } from './utils';
 import { OPERATORS } from './constants';
-
-type IdField = string | number | null;
 
 export class PrismaService<ModelData = Record<string, any>> extends AdapterService {
   Model: any;
@@ -52,7 +50,7 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
         take,
         orderBy,
         where,
-        ...(select ? { select } : include ? { include } : {}),
+        ...buildSelectOrInclude({ select, include }),
       }),
       this.Model.count({
         where,
@@ -71,11 +69,11 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { where, select, include } = buildPrismaQueryParams({
-      query: { id, ...query }, filters, whitelist,
+      id, query, filters, whitelist,
     });
     const result: Partial<ModelData> = await this.Model.findUnique({
       where,
-      ...(select ? { select } : include ? { include } : {}),
+      ...buildSelectOrInclude({ select, include }),
     });
     return result;
   }
@@ -87,13 +85,13 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     if (Array.isArray(data)) {
       const result: Partial<ModelData>[] = await this.client.$transaction(data.map((d) => this.Model.create({
         data: d,
-        ...(select ? { select } : include ? { include } : {}),
+        ...buildSelectOrInclude({ select, include }),
       })));
       return result;
     }
     const result: Partial<ModelData> = await this.Model.create({
       data,
-      ...(select ? { select } : include ? { include } : {}),
+      ...buildSelectOrInclude({ select, include }),
     });
     return result;
   }
@@ -102,12 +100,12 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { where, select, include } = buildPrismaQueryParams({
-      query: { id, ...query }, filters, whitelist,
+      id, query, filters, whitelist,
     });
     const result: Partial<ModelData> = await this.Model.update({
       data,
       where,
-      ...(select ? { select } : include ? { include } : {}),
+      ...buildSelectOrInclude({ select, include }),
     });
     return result;
   }
@@ -123,7 +121,7 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     const result: ManyResult = await this.Model.updateMany({
       data,
       where,
-      ...(select ? { select } : include ? { include } : {}),
+      ...buildSelectOrInclude({ select, include }),
     });
     return result;
   }
@@ -133,18 +131,18 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     const { whitelist } = this.options;
     if (id) {
       const { where, select, include } = buildPrismaQueryParams({
-        query: { id, ...query }, filters, whitelist,
+        id, query, filters, whitelist,
       });
       const result: Partial<ModelData> = await this.Model.delete({
         where,
-        ...(select ? { select } : include ? { include } : {}),
+        ...buildSelectOrInclude({ select, include }),
       });
       return result;
     }
     const { where, select, include } = buildPrismaQueryParams({ query, filters, whitelist });
     const result: ManyResult = await this.Model.deleteMany({
       where,
-      ...(select ? { select } : include ? { include } : {}),
+      ...buildSelectOrInclude({ select, include }),
     });
     return result;
   }

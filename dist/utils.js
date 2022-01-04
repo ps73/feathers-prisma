@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
     const asNumber = Number(value);
@@ -102,10 +102,10 @@ const buildPagination = ($skip, $limit) => {
     };
 };
 exports.buildPagination = buildPagination;
-const buildPrismaQueryParams = ({ query, filters, whitelist }) => {
+const buildPrismaQueryParams = ({ id, query, filters, whitelist }) => {
     let select = (0, exports.buildSelect)(filters.$select || []);
     const selectExists = Object.keys(select).length > 0;
-    const { where, include } = (0, exports.buildWhereAndInclude)(query, whitelist);
+    const { where, include } = (0, exports.buildWhereAndInclude)(id ? Object.assign({ id }, query) : query, whitelist);
     const includeExists = Object.keys(include).length > 0;
     const orderBy = (0, exports.buildOrderBy)(filters.$sort || {});
     const { skip, take } = (0, exports.buildPagination)(filters.$skip, filters.$limit);
@@ -136,3 +136,7 @@ const buildPrismaQueryParams = ({ query, filters, whitelist }) => {
     };
 };
 exports.buildPrismaQueryParams = buildPrismaQueryParams;
+const buildSelectOrInclude = ({ select, include }) => {
+    return select ? { select } : include ? { include } : {};
+};
+exports.buildSelectOrInclude = buildSelectOrInclude;
