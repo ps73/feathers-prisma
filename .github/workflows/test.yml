@@ -30,4 +30,4 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - run: npm install && npm run lint -- --cache && npm run test
+    - run: npm install && npx prisma generate && npm run lint -- --cache && npm run test
