@@ -7,15 +7,16 @@ export type Paginate = {
   max?: number;
 }
 
-export type PrismaServiceOptions = {
-  id?: string;
+export interface PrismaServiceOptions {
+  Model: any;
   model: string;
-  whitelist: string[];
-  paginate?: Paginate | false;
-  multi?: string[];
-  useIdGeneration?: boolean;
-  idGenerator?: () => string;
-};
+  events?: string[];
+  multi?: boolean | string[];
+  id?: string;
+  paginate?: Paginate;
+  whitelist?: string[];
+  filters?: string[];
+}
 
 export type EagerQuery = (string | string[] | string[][])[];
 

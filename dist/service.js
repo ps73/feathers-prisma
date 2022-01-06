@@ -23,10 +23,11 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 max: options.paginate && options.paginate.max || 100,
             },
             multi: options.multi || [],
+            filters: options.filters || [],
+            events: options.events || [],
             whitelist: Object.values(constants_1.OPERATORS).concat(options.whitelist || []),
         });
-        this.idGenerator = () => '';
-        const { model, useIdGeneration, idGenerator } = options;
+        const { model } = options;
         if (!model) {
             throw new errors.GeneralError('You must provide a model string');
         }
@@ -34,8 +35,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
         if (!client[model]) {
             throw new errors.GeneralError(`No model with name ${model} found in prisma client.`);
         }
-        if (useIdGeneration && idGenerator)
-            this.idGenerator = idGenerator;
         this.client = client;
         // @ts-ignore
         this.Model = client[model];

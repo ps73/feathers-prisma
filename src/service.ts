@@ -10,8 +10,6 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
   Model: any;
   client: PrismaClient;
 
-  idGenerator = () => '';
-
   constructor(options: PrismaServiceOptions, client: PrismaClient) {
     super({
       id: options.id || 'id',
@@ -20,10 +18,12 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
         max: options.paginate && options.paginate.max || 100,
       },
       multi: options.multi || [],
+      filters: options.filters || [],
+      events: options.events || [],
       whitelist: Object.values(OPERATORS).concat(options.whitelist || []),
     });
 
-    const { model, useIdGeneration, idGenerator } = options;
+    const { model } = options;
     if (!model) {
       throw new errors.GeneralError('You must provide a model string');
     }
@@ -31,7 +31,6 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     if (!client[model]) {
       throw new errors.GeneralError(`No model with name ${model} found in prisma client.`);
     }
-    if (useIdGeneration && idGenerator) this.idGenerator = idGenerator;
     this.client = client;
     // @ts-ignore
     this.Model = client[model];

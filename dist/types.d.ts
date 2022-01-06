@@ -4,15 +4,19 @@ export declare type Paginate = {
     default?: number;
     max?: number;
 };
-export declare type PrismaServiceOptions = {
-    id?: string;
+export interface PrismaServiceOptions {
+    Model: any;
     model: string;
-    whitelist: string[];
-    paginate?: Paginate | false;
-    multi?: string[];
-    useIdGeneration?: boolean;
-    idGenerator?: () => string;
-};
+    events?: string[];
+    multi?: boolean | string[];
+    id?: string;
+    paginate?: {
+        default?: number;
+        max?: number;
+    };
+    whitelist?: string[];
+    filters?: string[];
+}
 export declare type EagerQuery = (string | string[] | string[][])[];
 export interface QueryParamRecordFilters {
     $in?: (string | boolean | number)[];

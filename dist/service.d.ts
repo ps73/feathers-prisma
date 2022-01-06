@@ -5,7 +5,6 @@ import { IdField, ManyResult, PrismaServiceOptions } from './types';
 export declare class PrismaService<ModelData = Record<string, any>> extends AdapterService {
     Model: any;
     client: PrismaClient;
-    idGenerator: () => string;
     constructor(options: PrismaServiceOptions, client: PrismaClient);
     _find(params?: Params): Promise<any>;
     _get(id: IdField, params?: Params): Promise<Partial<ModelData>>;
