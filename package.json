@@ -1,7 +1,7 @@
 {
   "name": "feathers-prisma",
   "description": "A Feathers service adapter for Prisma ORM.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "homepage": "https://github.com/ps73/feathers-prisma",
   "main": "dist/",
   "types": "dist/",
