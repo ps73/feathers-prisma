@@ -8,7 +8,6 @@ export type Paginate = {
 }
 
 export interface PrismaServiceOptions {
-  Model: any;
   model: string;
   events?: string[];
   multi?: boolean | string[];
