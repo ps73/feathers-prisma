@@ -10,10 +10,7 @@ export interface PrismaServiceOptions {
     events?: string[];
     multi?: boolean | string[];
     id?: string;
-    paginate?: {
-        default?: number;
-        max?: number;
-    };
+    paginate?: Paginate;
     whitelist?: string[];
     filters?: string[];
 }
