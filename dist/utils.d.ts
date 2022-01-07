@@ -19,7 +19,7 @@ export declare const buildPrismaQueryParams: ({ id, query, filters, whitelist }:
     query: Record<string, any>;
     filters: Record<string, any>;
     whitelist: string[];
-}) => {
+}, idField: string) => {
     skip: number;
     take: number;
     orderBy: {
@@ -60,3 +60,9 @@ export declare const buildSelectOrInclude: ({ select, include }: {
     select?: undefined;
     include?: undefined;
 };
+export declare const checkIdInQuery: ({ id, query, idField, allowOneOf, }: {
+    id: IdField | null;
+    query: Record<string, any>;
+    idField: string;
+    allowOneOf?: boolean | undefined;
+}) => void;

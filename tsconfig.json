@@ -102,5 +102,5 @@
     "node_modules",
     "example"
   ],
-  "include": ["src/*"],
+  "include": ["src/*", "test/newTests.test.js"],
 }

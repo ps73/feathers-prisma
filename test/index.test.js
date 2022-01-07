@@ -1,162 +1,237 @@
 const { expect } = require('chai');
 const { service, PrismaService, prismaService } = require('../dist');
-const { app, prismaClient } = require('./app');
+const feathers = require('@feathersjs/feathers');
+const adapterTests = require('@feathersjs/adapter-tests');
+const errors = require('@feathersjs/errors');
+const { PrismaClient } = require('@prisma/client');
 
-const todosBatch = [
-  { title: 'Title', userId: 1, tag1: 'tag', tag2: 'test' },
-  { title: 'Title 2', userId: 1, tag1: 'test', done: true },
-  { title: 'Title 3', userId: 1, tag1: 'abc', tag2: 'xyz', prio: 2 },
-  { title: 'Title 4', userId: 1, tag1: 'xyz', tag2: 'def'  },
-];
+const testSuite = adapterTests([
+  '.options',
+  '.events',
+  '._get',
+  '._find',
+  '._create',
+  '._update',
+  '._patch',
+  '._remove',
+  '.get',
+  '.get + $select',
+  '.get + id + query',
+  '.get + NotFound',
+  '.find',
+  '.remove',
+  '.remove + $select',
+  '.remove + id + query',
+  '.remove + multi',
+  '.update',
+  '.update + $select',
+  '.update + id + query',
+  '.update + NotFound',
+  '.update + query + NotFound',
+  '.patch',
+  '.patch + $select',
+  '.patch + id + query',
+  '.patch multiple',
+  '.patch + NotFound',
+  '.patch multi query same',
+  '.patch multi query changed',
+  '.patch + query + NotFound',
+  '.create',
+  '.create + $select',
+  '.create multi',
+  'internal .find',
+  'internal .get',
+  'internal .create',
+  'internal .update',
+  'internal .patch',
+  'internal .remove',
+  '.find + equal',
+  '.find + equal multiple',
+  '.find + $sort',
+  '.find + $sort + string',
+  '.find + $limit',
+  '.find + $limit 0',
+  '.find + $skip',
+  '.find + $select',
+  '.find + $or',
+  '.find + $in',
+  '.find + $nin',
+  '.find + $lt',
+  '.find + $lte',
+  '.find + $gt',
+  '.find + $gte',
+  '.find + $ne',
+  '.find + $gt + $lt + $sort',
+  '.find + $or nested + $sort',
+  '.find + paginate',
+  '.find + paginate + $limit + $skip',
+  '.find + paginate + $limit 0',
+  '.find + paginate + params',
+  '.get + id + query id',
+  '.remove + id + query id',
+  '.update + id + query id',
+  '.patch + id + query id'
+]);
 
-const todo = {
-  title: 'Todo',
-  prio: 3,
-  done: true,
-  userId: 1,
-};
+const app = feathers();
+const prismaClient = new PrismaClient();
 
-describe('feathers-prisma', () => {
-  it('basic functionality', () => {
-    expect(typeof service).to.equal('function', 'It worked');
-    expect(app.service('todos').Model)
-      .to.equal(new PrismaService({ model: 'todo' }, prismaClient).Model);
-    expect(app.service('todos').Model)
-      .to.equal(prismaService({ model: 'todo' }, prismaClient).Model);
-  });
+prismaClient.$connect();
 
-  it('creates user, returns data with id and deletes it', () => {
-    app.service('users').create({
-      name: 'Test User',
-      email: `test.user+${Date.now()}@mail.com`,
-    }).then((resp) => {
-      expect(resp).to.have.property('id');
-      app.service('users').delete(resp.id);
+const users = prismaService({
+  model: 'user',
+  events: ['testing'],
+  whitelist: ['$eager'],
+}, prismaClient);
+
+const people = prismaService({
+  model: 'people',
+  events: ['testing'],
+}, prismaClient);
+
+const peopleId = prismaService({
+  model: 'peopleId',
+  id: 'customid',
+  events: ['testing'],
+}, prismaClient);
+
+const todos = prismaService({
+  model: 'todo',
+  multi: ['create', 'patch', 'remove'],
+  whitelist: ['$eager'],
+}, prismaClient);
+
+app.use('/users', users);
+app.use('/people', people);
+app.use('/people-customid', peopleId);
+app.use('/todos', todos);
+
+
+describe('Feathers Prisma Service', () => {
+  describe('Initialization', () => {
+    describe('when missing a model', () => {
+      it('throws an error', () =>
+        expect(service.bind(null, {}, prismaClient))
+          .to.throw(/You must provide a model string/)
+      );
+    });
+
+    describe('when model is not included in prisma client', () => {
+      it('throws an error', () =>
+        expect(service.bind(null, { model: 'test' }, prismaClient))
+          .to.throw('No model with name test found in prisma client.')
+      );
+    });
+
+    describe('test basic functionality of exported members', () => {
+      it('class and functions in parity', () => {
+        const peopleService = app.service('people');
+        expect(typeof service).to.equal('function', 'It worked');
+        expect(typeof prismaService).to.equal('function', 'It worked');
+        expect(peopleService.Model)
+          .to.equal(new PrismaService({ model: 'people' }, prismaClient).Model);
+        expect(peopleService.Model)
+          .to.equal(prismaService({ model: 'people' }, prismaClient).Model);
+        expect(prismaService({ model: 'people', id: 'customid' }, prismaClient).options.id)
+          .to.not.equal(peopleService.options.id);
+      });
     });
   });
 
-  it('creates batch todos, returns array of data with ids and batch deletes all', async () => {
-    const created = await app.service('todos').create(todosBatch);
-    const ids = created.map((t) => t.id);
-    const { count } = await app.service('todos').remove(null, {
-      query: {
-        id: {
-          $in: ids,
+  describe('Custom tests', () => {
+    const usersService = app.service('users');
+    const todosService = app.service('todos');
+
+    let data;
+    beforeEach(async () => {
+      data = await usersService.create({
+        name: 'Max Power',
+        age: 19,
+        todos: {
+          create: [
+            { title: 'Todo1', prio: 1 }
+          ],
+        }
+      }, {
+        query: {
+          $eager: ['todos'],
         },
-      },
+      });
     });
-    expect(ids.length).to.equal(4);
-    expect(count).to.equal(4);
+
+    afterEach(async () => {
+      await todosService.remove(null, { userId: data.id });
+      await usersService.remove(data.id);
+    });
+
+    describe('relations', () => {
+      it('creates with related items', () => {
+        expect(data.todos.length).to.equal(1);
+      });
+      it('find with eager loading related item', async () => {
+        const result = await todosService.find({
+          query: {
+            $eager: ['user'],
+          },
+        });
+        expect(result[0].user.id).to.equal(result[0].userId);
+      });
+      it('find with deep eager loading related item', async () => {
+        const result = await todosService.find({
+          query: {
+            $eager: [['user', ['todos', ['user']]]],
+          },
+        });
+        expect(result[0].user.todos[0].user.id).to.equal(result[0].user.todos[0].userId);
+      });
+    });
+
+    describe('custom query', () => {
+      beforeEach(async () => {
+        await todosService.create([
+          { title: 'Lorem', prio: 1, userId: data.id },
+          { title: 'Lorem Ipsum', prio: 1, userId: data.id },
+          { title: '[TODO]', prio: 1, userId: data.id },
+        ]);
+      });
+
+      it('.find + $contains', async () => {
+        const results = await todosService.find({
+          query: {
+            title: {
+              $contains: 'lorem',
+            },
+          },
+        });
+        expect(results.length).to.equal(2);
+      });
+
+      it('.find + $startsWith', async () => {
+        const results = await todosService.find({
+          query: {
+            title: {
+              $startsWith: 'lorem',
+            },
+          },
+        });
+        expect(results.length).to.equal(2);
+      });
+
+      it('.find + $endsWith', async () => {
+        const results = await todosService.find({
+          query: {
+            title: {
+              $endsWith: 'o]',
+            },
+          },
+        });
+        expect(results.length).to.equal(1);
+      });
+    });
   });
 
-  it('creates todo, returns data and deletes it', async () => {
-    const created = await app.service('todos').create(todo);
-    expect(created.title).to.equal('Todo');
-    const removed = await app.service('todos').remove(created.id);
-    expect(removed.id).to.equal(created.id);
-  });
-
-  it('creates multiple todos and filters via find', async () => {
-    await app.service('todos').remove(null, {
-      query: {
-        $skip: 0,
-        $limit: 100,
-        userId: 1,
-      },
-    });
-    const created = await app.service('todos').create(todosBatch);
-    const findLimitWithSort = await app.service('todos').find({
-      query: {
-        $limit: 2,
-        $skip: 2,
-        $sort: {
-          title: 1,
-        },
-        userId: 1,
-      },
-    });
-    expect(findLimitWithSort.data.length).to.equal(2);
-    expect(findLimitWithSort.data[0].id).to.equal(created[2].id);
-    const findInOrEq = await app.service('todos').find({
-      query: {
-        userId: 1,
-        $sort: {
-          title: 1,
-        },
-        title: {
-          contains: 'Title',
-        },
-        $or: [
-          { tag1: { $in: ['tag', 'xyz'] } },
-          { done: true },
-        ],
-      },
-    });
-    expect(findInOrEq.data[0].title).to.equal('Title');
-    expect(findInOrEq.data.length).to.equal(3);
-  });
-
-  it('get todo and patch title', async () => {
-    const created = await app.service('todos').create(todo);
-    const findOne = await app.service('todos').get(created.id);
-    const patched = await app.service('todos').patch(findOne.id, {
-      title: 'New Todo',
-    });
-    expect(patched.title).not.to.equal(created.title);
-    expect(patched.title).to.equal('New Todo');
-  });
-
-  it('patches multiple todos', async () => {
-    const todos = await app.service('todos').find({
-      query: {
-        userId: 1,
-        title: {
-          $contains: 'Title',
-        },
-        done: false,
-        tag1: {
-          $gt: 'abc',
-          $lte: 'xyz'
-        },
-        $sort: {
-          title: 1,
-        },
-        $limit: 100,
-      },
-    });
-    const ids = todos.data.map((t) => t.id);
-    const { count } = await app.service('todos').patch(null, {
-      done: true,
-      title: '[Erledigt]'
-    }, {
-      query: {
-        id: {
-          $in: ids,
-        },
-        $limit: 100,
-      },
-    });
-    expect(count).to.be.above(0);
-    const potentiallyPatchedTodos = await app.service('todos').find({
-      query: {
-        userId: 1,
-        title: {
-          $startsWith: '[',
-          $endsWith: ']',
-        },
-        done: true,
-        tag1: {
-          $gt: 'abc',
-          $lte: 'xyz'
-        },
-        $sort: {
-          title: 1,
-        },
-        $limit: 100,
-      },
-    });
-    const patchedIds = potentiallyPatchedTodos.data.map((t) => t.id);
-    expect(count).to.be.equal(todos.total);
-    expect(patchedIds).deep.to.equal(ids);
-  });
+  testSuite(app, errors, 'users', 'id');
+  testSuite(app, errors, 'people', 'id');
+  testSuite(app, errors, 'people-customid', 'customid');
 });
+
