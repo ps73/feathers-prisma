@@ -1,6 +1,6 @@
 export type PrismaClient = any;
 
-export type IdField = string | number | null;
+export type IdField = string | number;
 
 export type Paginate = {
   default?: number;
@@ -32,7 +32,7 @@ export interface QueryParamRecordFilters {
   $contains?: string;
   $search?: string;
   $startsWith?: string;
-  $endsWidth?: string;
+  $endsWith?: string;
   $mode?: string;
 }
 
@@ -41,8 +41,4 @@ export type QueryParamRecordsOr = Record<string, QueryParamRecord | QueryParamRe
 
 export type QueryParam = {
   [key: string]: string | boolean | number | QueryParamRecordFilters | QueryParamRecordsOr;
-}
-
-export type ManyResult = {
-  count: number;
 }

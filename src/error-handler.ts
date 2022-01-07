@@ -1,5 +1,5 @@
 import errors = require('@feathersjs/errors');
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/index';
+import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/index';
 
 function getType(v: number): string {
   let type = '';
@@ -19,9 +19,8 @@ function getType(v: number): string {
   return type;
 }
 
-function errorHandler(error: any) {
+export function errorHandler(error: any, prismaMethod?: string) {
   let feathersError;
-
   if (error instanceof errors.FeathersError) {
     feathersError = error;
   } else if (error instanceof PrismaClientKnownRequestError) {
@@ -35,6 +34,10 @@ function errorHandler(error: any) {
       break;
     case 'query':
       feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
+      if (code === 'P2025') {
+        // @ts-ignore
+        feathersError = new errors.NotFound(meta?.cause || 'Record not found.');
+      }
       break;
     case 'migration':
       feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
@@ -45,9 +48,18 @@ function errorHandler(error: any) {
     default:
       feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
     }
+  } else if (error instanceof PrismaClientValidationError) {
+    switch (prismaMethod) {
+    case 'findUnique':
+    case 'remove':
+    case 'update':
+      feathersError = new errors.NotFound('Record not found.');
+      break;
+    default:
+      break;
+    }
   }
 
   throw feathersError;
 }
 
-export default errorHandler;

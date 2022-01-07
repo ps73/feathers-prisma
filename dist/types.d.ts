@@ -1,5 +1,5 @@
 export declare type PrismaClient = any;
-export declare type IdField = string | number | null;
+export declare type IdField = string | number;
 export declare type Paginate = {
     default?: number;
     max?: number;
@@ -26,14 +26,11 @@ export interface QueryParamRecordFilters {
     $contains?: string;
     $search?: string;
     $startsWith?: string;
-    $endsWidth?: string;
+    $endsWith?: string;
     $mode?: string;
 }
 export declare type QueryParamRecord = string | boolean | number;
 export declare type QueryParamRecordsOr = Record<string, QueryParamRecord | QueryParamRecordFilters>[];
 export declare type QueryParam = {
     [key: string]: string | boolean | number | QueryParamRecordFilters | QueryParamRecordsOr;
-};
-export declare type ManyResult = {
-    count: number;
 };

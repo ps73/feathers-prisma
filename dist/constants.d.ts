@@ -8,7 +8,7 @@ export declare const OPERATORS: {
     notIn: string;
     contains: string;
     startsWith: string;
-    endsWidth: string;
+    endsWith: string;
     mode: string;
 };
 export declare const OPERATORS_MAP: {
@@ -23,6 +23,6 @@ export declare const OPERATORS_MAP: {
     $contains: string;
     $search: string;
     $startsWith: string;
-    $endsWidth: string;
+    $endsWith: string;
     $mode: string;
 };

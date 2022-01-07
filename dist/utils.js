@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+const errors_1 = require("@feathersjs/errors");
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
     const asNumber = Number(value);
@@ -102,15 +103,15 @@ const buildPagination = ($skip, $limit) => {
     };
 };
 exports.buildPagination = buildPagination;
-const buildPrismaQueryParams = ({ id, query, filters, whitelist }) => {
+const buildPrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
     let select = (0, exports.buildSelect)(filters.$select || []);
     const selectExists = Object.keys(select).length > 0;
-    const { where, include } = (0, exports.buildWhereAndInclude)(id ? Object.assign({ id }, query) : query, whitelist);
+    const { where, include } = (0, exports.buildWhereAndInclude)(id ? Object.assign({ [idField]: id }, query) : query, whitelist);
     const includeExists = Object.keys(include).length > 0;
     const orderBy = (0, exports.buildOrderBy)(filters.$sort || {});
     const { skip, take } = (0, exports.buildPagination)(filters.$skip, filters.$limit);
     if (selectExists) {
-        select = Object.assign(Object.assign({}, select), include);
+        select = Object.assign(Object.assign({ [idField]: true }, select), include);
         return {
             skip,
             take,
@@ -140,3 +141,9 @@ const buildSelectOrInclude = ({ select, include }) => {
     return select ? { select } : include ? { include } : {};
 };
 exports.buildSelectOrInclude = buildSelectOrInclude;
+const checkIdInQuery = ({ id, query, idField, allowOneOf, }) => {
+    if ((allowOneOf && id && Object.keys(query).length > 0) || (id && query[idField])) {
+        throw new errors_1.NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
+    }
+};
+exports.checkIdInQuery = checkIdInQuery;

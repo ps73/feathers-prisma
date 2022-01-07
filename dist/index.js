@@ -17,3 +17,4 @@ Object.defineProperty(exports, "prismaService", { enumerable: true, get: functio
 Object.defineProperty(exports, "PrismaService", { enumerable: true, get: function () { return service_1.PrismaService; } });
 __exportStar(require("./types"), exports);
 __exportStar(require("./constants"), exports);
+__exportStar(require("./error-handler"), exports);

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.errorHandler = void 0;
 const errors = require("@feathersjs/errors");
 const index_1 = require("@prisma/client/runtime/index");
 function getType(v) {
@@ -19,7 +20,7 @@ function getType(v) {
     });
     return type;
 }
-function errorHandler(error) {
+function errorHandler(error, prismaMethod) {
     let feathersError;
     if (error instanceof errors.FeathersError) {
         feathersError = error;
@@ -33,6 +34,10 @@ function errorHandler(error) {
                 break;
             case 'query':
                 feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
+                if (code === 'P2025') {
+                    // @ts-ignore
+                    feathersError = new errors.NotFound((meta === null || meta === void 0 ? void 0 : meta.cause) || 'Record not found.');
+                }
                 break;
             case 'migration':
                 feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
@@ -44,6 +49,17 @@ function errorHandler(error) {
                 feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
         }
     }
+    else if (error instanceof index_1.PrismaClientValidationError) {
+        switch (prismaMethod) {
+            case 'findUnique':
+            case 'remove':
+            case 'update':
+                feathersError = new errors.NotFound('Record not found.');
+                break;
+            default:
+                break;
+        }
+    }
     throw feathersError;
 }
-exports.default = errorHandler;
+exports.errorHandler = errorHandler;

@@ -9,7 +9,7 @@ export const OPERATORS = {
   // specific to prisma
   contains: '$contains',
   startsWith: '$startsWith',
-  endsWidth: '$endsWith',
+  endsWith: '$endsWith',
   mode: '$mode',
 };
 
@@ -26,6 +26,6 @@ export const OPERATORS_MAP = {
   $contains: 'contains',
   $search: 'search',
   $startsWith: 'startsWith',
-  $endsWidth: 'endsWith',
+  $endsWith: 'endsWith',
   $mode: 'mode',
 };

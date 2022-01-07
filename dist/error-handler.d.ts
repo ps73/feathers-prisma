@@ -1,2 +1,1 @@
-declare function errorHandler(error: any): void;
-export default errorHandler;
+export declare function errorHandler(error: any, prismaMethod?: string): void;

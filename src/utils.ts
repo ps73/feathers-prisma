@@ -1,3 +1,4 @@
+import { NotFound } from '@feathersjs/errors';
 import { OPERATORS_MAP } from './constants';
 import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
@@ -97,21 +98,25 @@ export const buildPagination = ($skip: number, $limit: number) => {
   };
 };
 
-export const buildPrismaQueryParams = ({ id, query, filters, whitelist }: {
-  id?: IdField,
-  query: Record<string, any>,
-  filters: Record<string, any>,
-  whitelist: string[],
-}) => {
+export const buildPrismaQueryParams = (
+  { id, query, filters, whitelist }: {
+    id?: IdField,
+    query: Record<string, any>,
+    filters: Record<string, any>,
+    whitelist: string[],
+  },
+  idField: string,
+) => {
   let select = buildSelect(filters.$select || []);
   const selectExists = Object.keys(select).length > 0;
-  const { where, include } = buildWhereAndInclude(id ? { id, ...query } : query, whitelist);
+  const { where, include } = buildWhereAndInclude(id ? { [idField]: id, ...query } : query, whitelist);
   const includeExists = Object.keys(include).length > 0;
   const orderBy = buildOrderBy(filters.$sort || {});
   const { skip, take } = buildPagination(filters.$skip, filters.$limit);
 
   if (selectExists) {
     select = {
+      [idField]: true,
       ...select,
       ...include,
     };
@@ -147,4 +152,22 @@ export const buildSelectOrInclude = (
   { select, include }: { select?: Record<string, boolean>; include?: Record<string, any> },
 ) => {
   return select ? { select } : include ? { include } : {};
+};
+
+export const checkIdInQuery = (
+  {
+    id,
+    query,
+    idField,
+    allowOneOf,
+  }: {
+    id: IdField | null;
+    query: Record<string, any>;
+    idField: string;
+    allowOneOf?: boolean;
+  }
+) => {
+  if ((allowOneOf && id && Object.keys(query).length > 0) || (id && query[idField])) {
+    throw new NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
+  }
 };

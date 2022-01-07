@@ -2,9 +2,10 @@ import type { Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import * as errors from '@feathersjs/errors';
 import { PrismaClient } from '@prisma/client';
-import { IdField, ManyResult, PrismaServiceOptions } from './types';
-import { buildPrismaQueryParams, buildSelectOrInclude } from './utils';
+import { IdField, PrismaServiceOptions } from './types';
+import { buildPrismaQueryParams, buildSelectOrInclude, checkIdInQuery } from './utils';
 import { OPERATORS } from './constants';
+import { errorHandler } from './error-handler';
 
 export class PrismaService<ModelData = Record<string, any>> extends AdapterService {
   Model: any;
@@ -14,8 +15,8 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     super({
       id: options.id || 'id',
       paginate: {
-        default: options.paginate && options.paginate.default || 25,
-        max: options.paginate && options.paginate.max || 100,
+        default: options.paginate?.default,
+        max: options.paginate?.max,
       },
       multi: options.multi || [],
       filters: options.filters || [],
@@ -25,7 +26,7 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
 
     const { model } = options;
     if (!model) {
-      throw new errors.GeneralError('You must provide a model string');
+      throw new errors.GeneralError('You must provide a model string.');
     }
     // @ts-ignore
     if (!client[model]) {
@@ -41,109 +42,165 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     const { whitelist } = this.options;
     const { skip, take, orderBy, where, select, include } = buildPrismaQueryParams({
       query, filters, whitelist,
-    });
+    }, this.options.id);
+    try {
+      const findMany = () => {
+        return this.Model.findMany({
+          ...(typeof take === 'number' ? { skip, take } : { skip }),
+          orderBy,
+          where,
+          ...buildSelectOrInclude({ select, include }),
+        });
+      };
 
-    const [data, count] = await this.client.$transaction([
-      this.Model.findMany({
+      if (!this.options.paginate.default || (typeof take !== 'number' && !take)) {
+        const data = await findMany();
+        return data;
+      }
+
+      const [data, count] = await this.client.$transaction([
+        findMany(),
+        this.Model.count({
+          where,
+        }),
+      ]);
+
+      const result = {
+        total: count,
         skip,
-        take,
-        orderBy,
-        where,
-        ...buildSelectOrInclude({ select, include }),
-      }),
-      this.Model.count({
-        where,
-      }),
-    ]);
-    const result = {
-      total: count,
-      skip,
-      limit: take,
-      data,
-    };
-    return result;
+        limit: take,
+        data,
+      };
+      return result;
+    } catch (e) {
+      errorHandler(e);
+    }
   }
 
   async _get(id: IdField, params: Params = {}) {
-    const { query, filters } = this.filterQuery(params);
-    const { whitelist } = this.options;
-    const { where, select, include } = buildPrismaQueryParams({
-      id, query, filters, whitelist,
-    });
-    const result: Partial<ModelData> = await this.Model.findUnique({
-      where,
-      ...buildSelectOrInclude({ select, include }),
-    });
-    return result;
+    try {
+      const { query, filters } = this.filterQuery(params);
+      const { whitelist } = this.options;
+      checkIdInQuery({ id, query, idField: this.options.id });
+      const { where, select, include } = buildPrismaQueryParams({
+        id, query, filters, whitelist,
+      }, this.options.id);
+      const result: Partial<ModelData> = await this.Model.findUnique({
+        where,
+        ...buildSelectOrInclude({ select, include }),
+      });
+      if (!result) throw new errors.NotFound(`No record found for id '${id}'`);
+      return result;
+    } catch (e) {
+      errorHandler(e, 'findUnique');
+    }
   }
 
   async _create(data: Partial<ModelData> | Partial<ModelData>[], params: Params = {}) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
-    const { select, include } = buildPrismaQueryParams({ query, filters, whitelist });
-    if (Array.isArray(data)) {
-      const result: Partial<ModelData>[] = await this.client.$transaction(data.map((d) => this.Model.create({
-        data: d,
+    const { select, include } = buildPrismaQueryParams({ query, filters, whitelist }, this.options.id);
+    try {
+      if (Array.isArray(data)) {
+        const result: Partial<ModelData>[] = await this.client.$transaction(data.map((d) => this.Model.create({
+          data: d,
+          ...buildSelectOrInclude({ select, include }),
+        })));
+        return result;
+      }
+      const result: Partial<ModelData> = await this.Model.create({
+        data,
         ...buildSelectOrInclude({ select, include }),
-      })));
+      });
       return result;
+    } catch (e) {
+      errorHandler(e);
     }
-    const result: Partial<ModelData> = await this.Model.create({
-      data,
-      ...buildSelectOrInclude({ select, include }),
-    });
-    return result;
   }
 
-  async _update(id: IdField, data: Partial<ModelData>, params: Params = {}) {
+  async _update(id: IdField, data: Partial<ModelData>, params: Params = {}, returnResult = false) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { where, select, include } = buildPrismaQueryParams({
       id, query, filters, whitelist,
-    });
-    const result: Partial<ModelData> = await this.Model.update({
-      data,
-      where,
-      ...buildSelectOrInclude({ select, include }),
-    });
-    return result;
+    }, this.options.id);
+    try {
+      checkIdInQuery({ id, query, idField: this.options.id });
+      const result = await this.Model.update({
+        data,
+        where,
+        ...buildSelectOrInclude({ select, include }),
+      });
+      if (select || returnResult) {
+        return result;
+      }
+      return { [this.options.id]: result.id, ...data };
+    } catch (e) {
+      errorHandler(e, 'update');
+    }
   }
 
-  async _patch(id: IdField, data: Partial<ModelData> | Partial<ModelData>[], params: Params = {}) {
+  async _patch(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params: Params = {}) {
     if (id && !Array.isArray(data)) {
-      const result = await this._update(id, data, params);
+      const result = await this._update(id, data, params, true);
       return result;
     }
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
-    const { where, select, include } = buildPrismaQueryParams({ query, filters, whitelist });
-    const result: ManyResult = await this.Model.updateMany({
-      data,
-      where,
-      ...buildSelectOrInclude({ select, include }),
-    });
-    return result;
+    const { where, select, include } = buildPrismaQueryParams({ query, filters, whitelist }, this.options.id);
+    try {
+      const [, result] = await this.client.$transaction([
+        this.Model.updateMany({
+          data,
+          where,
+          ...buildSelectOrInclude({ select, include }),
+        }),
+        this.Model.findMany({
+          where: {
+            ...where,
+            ...data,
+          },
+          ...buildSelectOrInclude({ select, include }),
+        }),
+      ]);
+      return result;
+    } catch (e) {
+      errorHandler(e, 'updateMany');
+    }
   }
 
-  async _remove(id: IdField, params: Params = {}) {
+  async _remove(id: IdField | null, params: Params = {}) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     if (id) {
       const { where, select, include } = buildPrismaQueryParams({
         id, query, filters, whitelist,
-      });
-      const result: Partial<ModelData> = await this.Model.delete({
+      }, this.options.id);
+      try {
+        checkIdInQuery({ id, query, allowOneOf: true, idField: this.options.id });
+        const result: Partial<ModelData> = await this.Model.delete({
+          where: id ? { [this.options.id]: id } : where,
+          ...buildSelectOrInclude({ select, include }),
+        });
+        return result;
+      } catch (e) {
+        errorHandler(e, 'delete');
+      }
+    }
+    const { where, select, include } = buildPrismaQueryParams({ query, filters, whitelist }, this.options.id);
+    try {
+      const query = {
         where,
         ...buildSelectOrInclude({ select, include }),
-      });
-      return result;
+      };
+      const [data] = await this.client.$transaction([
+        this.Model.findMany(query),
+        this.Model.deleteMany(query),
+      ]);
+      return data;
+    } catch (e) {
+      errorHandler(e, 'deleteMany');
     }
-    const { where, select, include } = buildPrismaQueryParams({ query, filters, whitelist });
-    const result: ManyResult = await this.Model.deleteMany({
-      where,
-      ...buildSelectOrInclude({ select, include }),
-    });
-    return result;
   }
 }
 
