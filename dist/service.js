@@ -109,7 +109,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 return result;
             }
             catch (e) {
-                console.log(e);
                 (0, error_handler_1.errorHandler)(e);
             }
         });

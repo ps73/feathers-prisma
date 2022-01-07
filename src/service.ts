@@ -114,7 +114,6 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
       });
       return result;
     } catch (e) {
-      console.log(e);
       errorHandler(e);
     }
   }
