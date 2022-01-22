@@ -47,6 +47,7 @@ function errorHandler(error, prismaMethod) {
                 break;
             default:
                 feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
+                break;
         }
     }
     else if (error instanceof index_1.PrismaClientValidationError) {
