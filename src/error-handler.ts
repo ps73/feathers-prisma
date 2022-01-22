@@ -47,6 +47,7 @@ export function errorHandler(error: any, prismaMethod?: string) {
       break;
     default:
       feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
+      break;
     }
   } else if (error instanceof PrismaClientValidationError) {
     switch (prismaMethod) {
