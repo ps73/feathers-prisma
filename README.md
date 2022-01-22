@@ -1,6 +1,6 @@
 # feathers-prisma
 
-[![Build Status](https://travis-ci.org/ps73/feathers-prisma.png?branch=master)](https://travis-ci.org/ps73/feathers-prisma)
+[![libraries.io](https://img.shields.io/librariesio/release/npm/feathers-prisma)](https://libraries.io/npm/feathers-prisma)
 [![Code Climate](https://codeclimate.com/github/ps73/feathers-prisma/badges/gpa.svg)](https://codeclimate.com/github/ps73/feathers-prisma)
 [![Test Coverage](https://codeclimate.com/github/ps73/feathers-prisma/badges/coverage.svg)](https://codeclimate.com/github/ps73/feathers-prisma/coverage)
 [![npm](https://img.shields.io/npm/v/feathers-prisma.svg?maxAge=3600)](https://www.npmjs.com/package/feathers-prisma)

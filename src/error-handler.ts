@@ -56,6 +56,7 @@ export function errorHandler(error: any, prismaMethod?: string) {
       feathersError = new errors.NotFound('Record not found.');
       break;
     default:
+      feathersError = new errors.GeneralError(error);
       break;
     }
   }
