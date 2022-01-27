@@ -171,7 +171,9 @@ describe('Feathers Prisma Service', () => {
       it('find with eager loading related item', async () => {
         const result = await todosService.find({
           query: {
-            $eager: ['user'],
+            $eager: {
+              user: ['name'],
+            },
           },
         });
         expect(result[0].user.id).to.equal(result[0].userId);

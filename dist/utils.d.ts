@@ -1,8 +1,8 @@
 import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
 export declare const castToNumberBooleanStringOrNull: (value: string | boolean | number) => string | number | boolean | null;
 export declare const castFeathersQueryToPrismaFilters: (p: QueryParamRecordFilters, whitelist: string[]) => Record<string, any>;
-export declare const castEagerQueryToPrismaInclude: (value: EagerQuery) => Record<string, any>;
-export declare const buildWhereAndInclude: (query: QueryParam, whitelist: string[]) => {
+export declare const castEagerQueryToPrismaInclude: (value: EagerQuery, whitelist: string[], idField: string) => Record<string, any>;
+export declare const buildWhereAndInclude: (query: QueryParam, whitelist: string[], idField: string) => {
     where: Record<string, any>;
     include: Record<string, any>;
 };

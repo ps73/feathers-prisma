@@ -17,7 +17,7 @@ export interface PrismaServiceOptions {
   filters?: string[];
 }
 
-export type EagerQuery = (string | string[] | string[][])[];
+export type EagerQuery = (string | string[] | string[][])[] | Record<string, boolean | string[]>;
 
 export interface QueryParamRecordFilters {
   $in?: (string | boolean | number)[];

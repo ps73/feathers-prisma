@@ -37,40 +37,55 @@ const castFeathersQueryToPrismaFilters = (p, whitelist) => {
     return filters;
 };
 exports.castFeathersQueryToPrismaFilters = castFeathersQueryToPrismaFilters;
-const castEagerQueryToPrismaInclude = (value) => {
+const castEagerQueryToPrismaInclude = (value, whitelist, idField) => {
     const include = {};
-    value.forEach((v) => {
-        if (Array.isArray(v) && typeof v[0] === 'string' && v.length > 1) {
-            const [key, ...includes] = v;
-            const subinclude = (0, exports.castEagerQueryToPrismaInclude)(includes);
-            include[key] = {
-                include: subinclude,
-            };
-        }
-        else if (Array.isArray(v) && typeof v[0] === 'string' && v.length === 1) {
-            const [key] = v;
-            include[key] = true;
-        }
-        else if (typeof v[0] !== 'string') {
-            throw {
-                code: 'FP1001',
-                message: 'First Array Item in a sub-array must be a string!',
-            };
-        }
-        else if (typeof v === 'string') {
-            include[v] = true;
-        }
-    });
+    if (Array.isArray(value)) {
+        value.forEach((v) => {
+            if (Array.isArray(v) && typeof v[0] === 'string' && v.length > 1) {
+                const [key, ...includes] = v;
+                const subinclude = (0, exports.castEagerQueryToPrismaInclude)(includes, whitelist, idField);
+                include[key] = {
+                    include: subinclude,
+                };
+            }
+            else if (Array.isArray(v) && typeof v[0] === 'string' && v.length === 1) {
+                const [key] = v;
+                include[key] = true;
+            }
+            else if (typeof v[0] !== 'string') {
+                throw {
+                    code: 'FP1001',
+                    message: 'First Array Item in a sub-array must be a string!',
+                };
+            }
+            else if (typeof v === 'string') {
+                include[v] = true;
+            }
+        });
+    }
+    else {
+        Object.keys(value).forEach((key) => {
+            const val = value[key];
+            if (typeof val === 'boolean') {
+                include[key] = val;
+            }
+            else if (Array.isArray(val)) {
+                include[key] = {
+                    select: Object.assign({ [idField]: true }, (0, exports.buildSelect)(val)),
+                };
+            }
+        });
+    }
     return include;
 };
 exports.castEagerQueryToPrismaInclude = castEagerQueryToPrismaInclude;
-const buildWhereAndInclude = (query, whitelist) => {
+const buildWhereAndInclude = (query, whitelist, idField) => {
     const where = {};
     let include = {};
     Object.keys(query).forEach((k) => {
         const value = query[k];
         if (k === '$or' && Array.isArray(value)) {
-            where.OR = value.map((v) => (0, exports.buildWhereAndInclude)(v, whitelist).where);
+            where.OR = value.map((v) => (0, exports.buildWhereAndInclude)(v, whitelist, idField).where);
         }
         else if (k !== '$eager' && typeof value === 'object' && !Array.isArray(value)) {
             where[k] = (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist);
@@ -80,7 +95,7 @@ const buildWhereAndInclude = (query, whitelist) => {
         }
         else if (k === '$eager' && whitelist.includes(k)) {
             const eager = value;
-            include = (0, exports.castEagerQueryToPrismaInclude)(eager);
+            include = (0, exports.castEagerQueryToPrismaInclude)(eager, whitelist, idField);
         }
     });
     return { where, include };
@@ -106,7 +121,7 @@ exports.buildPagination = buildPagination;
 const buildPrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
     let select = (0, exports.buildSelect)(filters.$select || []);
     const selectExists = Object.keys(select).length > 0;
-    const { where, include } = (0, exports.buildWhereAndInclude)(id ? Object.assign({ [idField]: id }, query) : query, whitelist);
+    const { where, include } = (0, exports.buildWhereAndInclude)(id ? Object.assign({ [idField]: id }, query) : query, whitelist, idField);
     const includeExists = Object.keys(include).length > 0;
     const orderBy = (0, exports.buildOrderBy)(filters.$sort || {});
     const { skip, take } = (0, exports.buildPagination)(filters.$skip, filters.$limit);

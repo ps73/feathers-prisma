@@ -13,7 +13,7 @@ export interface PrismaServiceOptions {
     whitelist?: string[];
     filters?: string[];
 }
-export declare type EagerQuery = (string | string[] | string[][])[];
+export declare type EagerQuery = (string | string[] | string[][])[] | Record<string, boolean | string[]>;
 export interface QueryParamRecordFilters {
     $in?: (string | boolean | number)[];
     $nin?: (string | boolean | number)[];

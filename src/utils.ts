@@ -20,7 +20,6 @@ export const castToNumberBooleanStringOrNull = (value: string | boolean | number
 
 export const castFeathersQueryToPrismaFilters = (p: QueryParamRecordFilters, whitelist: string[]) => {
   const filters: Record<string, any> = {};
-
   Object.keys(p).forEach((k: string) => {
     const key = (k as keyof typeof OPERATORS_MAP);
     const prismaKey = OPERATORS_MAP[key];
@@ -36,46 +35,61 @@ export const castFeathersQueryToPrismaFilters = (p: QueryParamRecordFilters, whi
   return filters;
 };
 
-export const castEagerQueryToPrismaInclude = (value: EagerQuery) => {
+export const castEagerQueryToPrismaInclude = (value: EagerQuery, whitelist: string[], idField: string) => {
   const include: Record<string, any> = {};
-
-  value.forEach((v) => {
-    if (Array.isArray(v) && typeof v[0] === 'string' && v.length > 1) {
-      const [key, ...includes] = v;
-      const subinclude = castEagerQueryToPrismaInclude(includes);
-      include[key] = {
-        include: subinclude,
-      };
-    } else if (Array.isArray(v) && typeof v[0] === 'string' && v.length === 1) {
-      const [key] = v;
-      include[key] = true;
-    } else if (typeof v[0] !== 'string') {
-      throw {
-        code: 'FP1001',
-        message: 'First Array Item in a sub-array must be a string!',
-      };
-    } else if (typeof v === 'string') {
-      include[v] = true;
-    }
-  });
+  if (Array.isArray(value)) {
+    value.forEach((v) => {
+      if (Array.isArray(v) && typeof v[0] === 'string' && v.length > 1) {
+        const [key, ...includes] = v;
+        const subinclude = castEagerQueryToPrismaInclude(includes, whitelist, idField);
+        include[key] = {
+          include: subinclude,
+        };
+      } else if (Array.isArray(v) && typeof v[0] === 'string' && v.length === 1) {
+        const [key] = v;
+        include[key] = true;
+      } else if (typeof v[0] !== 'string') {
+        throw {
+          code: 'FP1001',
+          message: 'First Array Item in a sub-array must be a string!',
+        };
+      } else if (typeof v === 'string') {
+        include[v] = true;
+      }
+    });
+  } else {
+    Object.keys(value).forEach((key) => {
+      const val = value[key];
+      if (typeof val === 'boolean') {
+        include[key] = val;
+      } else if (Array.isArray(val)) {
+        include[key] = {
+          select: {
+            [idField]: true,
+            ...buildSelect(val),
+          },
+        };
+      }
+    });
+  }
 
   return include;
 };
 
-export const buildWhereAndInclude = (query: QueryParam, whitelist: string[]) => {
+export const buildWhereAndInclude = (query: QueryParam, whitelist: string[], idField: string) => {
   const where: Record<string, any> = {};
   let include: Record<string, any> = {};
   Object.keys(query).forEach((k: string | '$or') => {
     const value = query[k];
     if (k === '$or' && Array.isArray(value)) {
-      where.OR = value.map((v) => buildWhereAndInclude(v, whitelist).where);
+      where.OR = value.map((v) => buildWhereAndInclude(v, whitelist, idField).where);
     } else if (k !== '$eager' && typeof value === 'object' && !Array.isArray(value)) {
       where[k] = castFeathersQueryToPrismaFilters(value, whitelist);
     } else if (k !== '$eager' && typeof value !== 'object' && !Array.isArray(value)) {
       where[k] = castToNumberBooleanStringOrNull(value);
     } else if (k === '$eager' && whitelist.includes(k)) {
       const eager = value as EagerQuery;
-      include = castEagerQueryToPrismaInclude(eager);
+      include = castEagerQueryToPrismaInclude(eager, whitelist, idField);
     }
   });
   return { where, include };
@@ -109,7 +123,7 @@ export const buildPrismaQueryParams = (
 ) => {
   let select = buildSelect(filters.$select || []);
   const selectExists = Object.keys(select).length > 0;
-  const { where, include } = buildWhereAndInclude(id ? { [idField]: id, ...query } : query, whitelist);
+  const { where, include } = buildWhereAndInclude(id ? { [idField]: id, ...query } : query, whitelist, idField);
   const includeExists = Object.keys(include).length > 0;
   const orderBy = buildOrderBy(filters.$sort || {});
   const { skip, take } = buildPagination(filters.$skip, filters.$limit);
