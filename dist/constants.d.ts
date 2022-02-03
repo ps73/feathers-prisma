@@ -6,6 +6,8 @@ export declare const OPERATORS: {
     lt: string;
     in: string;
     notIn: string;
+    and: string;
+    or: string;
     contains: string;
     startsWith: string;
     endsWith: string;

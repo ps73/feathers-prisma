@@ -80,15 +80,35 @@ export const castEagerQueryToPrismaInclude = (value: EagerQuery, whitelist: stri
   return include;
 };
 
+export const mergeFiltersWithSameKey = (
+  where: Record<string, any>,
+  key: string,
+  filter: Record<string, any> | string | number | boolean | null,
+) => {
+  if (typeof filter === 'object') {
+    return {
+      ...(where[key] || {}),
+      ...filter,
+    };
+  }
+};
+
 export const buildWhereAndInclude = (query: QueryParam, whitelist: string[], idField: string) => {
   const where: Record<string, any> = {};
   let include: Record<string, any> = {};
-  Object.keys(query).forEach((k: string | '$or' | '$rawWhere') => {
+  Object.keys(query).forEach((k: string | '$or' | '$and') => {
     const value = query[k];
     if (k === '$or' && Array.isArray(value)) {
       where.OR = value.map((v) => buildWhereAndInclude(v, whitelist, idField).where);
+    } else if (k === '$and' && Array.isArray(value)) {
+      value.forEach((v) => {
+        const whereValue = buildWhereAndInclude(v, whitelist, idField).where;
+        Object.keys(whereValue).map((subKey) => {
+          where[subKey] = mergeFiltersWithSameKey(where, subKey, whereValue[subKey]);
+        });
+      });
     } else if (k !== '$eager' && typeof value === 'object' && !Array.isArray(value)) {
-      where[k] = castFeathersQueryToPrismaFilters(value, whitelist);
+      where[k] = mergeFiltersWithSameKey(where, k, castFeathersQueryToPrismaFilters(value, whitelist));
     } else if (k !== '$eager' && typeof value !== 'object' && !Array.isArray(value)) {
       where[k] = castToNumberBooleanStringOrNull(value);
     } else if (k === '$eager' && whitelist.includes(k)) {

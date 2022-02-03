@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const errors_1 = require("@feathersjs/errors");
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
@@ -84,6 +84,12 @@ const castEagerQueryToPrismaInclude = (value, whitelist, idField) => {
     return include;
 };
 exports.castEagerQueryToPrismaInclude = castEagerQueryToPrismaInclude;
+const mergeFiltersWithSameKey = (where, key, filter) => {
+    if (typeof filter === 'object') {
+        return Object.assign(Object.assign({}, (where[key] || {})), filter);
+    }
+};
+exports.mergeFiltersWithSameKey = mergeFiltersWithSameKey;
 const buildWhereAndInclude = (query, whitelist, idField) => {
     const where = {};
     let include = {};
@@ -92,8 +98,16 @@ const buildWhereAndInclude = (query, whitelist, idField) => {
         if (k === '$or' && Array.isArray(value)) {
             where.OR = value.map((v) => (0, exports.buildWhereAndInclude)(v, whitelist, idField).where);
         }
+        else if (k === '$and' && Array.isArray(value)) {
+            value.forEach((v) => {
+                const whereValue = (0, exports.buildWhereAndInclude)(v, whitelist, idField).where;
+                Object.keys(whereValue).map((subKey) => {
+                    where[subKey] = (0, exports.mergeFiltersWithSameKey)(where, subKey, whereValue[subKey]);
+                });
+            });
+        }
         else if (k !== '$eager' && typeof value === 'object' && !Array.isArray(value)) {
-            where[k] = (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist);
+            where[k] = (0, exports.mergeFiltersWithSameKey)(where, k, (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist));
         }
         else if (k !== '$eager' && typeof value !== 'object' && !Array.isArray(value)) {
             where[k] = (0, exports.castToNumberBooleanStringOrNull)(value);

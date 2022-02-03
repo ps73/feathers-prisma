@@ -6,6 +6,8 @@ export const OPERATORS = {
   lt: '$lt',
   in: '$in',
   notIn: '$nin',
+  and: '$and',
+  or: '$or',
   // specific to prisma
   contains: '$contains',
   startsWith: '$startsWith',
