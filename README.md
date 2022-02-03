@@ -100,8 +100,7 @@ app.use(
     prismaClient
   )
 );
-// will load the recipients with the related user
-// as well as all attachments  of the messages
+// will load all messages where at least one of the recipients userIds is equal 1
 app.service("messages").find({
   query: {
     recipients: {
