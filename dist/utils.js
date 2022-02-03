@@ -86,7 +86,8 @@ const castEagerQueryToPrismaInclude = (value, whitelist, idField) => {
 exports.castEagerQueryToPrismaInclude = castEagerQueryToPrismaInclude;
 const mergeFiltersWithSameKey = (where, key, filter) => {
     if (typeof filter === 'object') {
-        return Object.assign(Object.assign({}, (where[key] || {})), filter);
+        const current = typeof where[key] === 'object' ? where[key] || {} : {};
+        return Object.assign(Object.assign({}, current), filter);
     }
 };
 exports.mergeFiltersWithSameKey = mergeFiltersWithSameKey;

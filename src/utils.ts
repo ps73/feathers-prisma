@@ -86,8 +86,10 @@ export const mergeFiltersWithSameKey = (
   filter: Record<string, any> | string | number | boolean | null,
 ) => {
   if (typeof filter === 'object') {
+    const current = typeof where[key] === 'object' ? where[key] || {} : {};
+
     return {
-      ...(where[key] || {}),
+      ...current,
       ...filter,
     };
   }

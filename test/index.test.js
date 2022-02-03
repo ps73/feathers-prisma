@@ -304,6 +304,38 @@ describe('Feathers Prisma Service', () => {
 
         expect(result).to.have.lengthOf(2);
       });
+
+      it('.find + $and + override normal equals', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          query: {
+            tag1: 'TEST',
+            $and: [{tag1: {$in: ['TEST', 'TEST2']}}],
+          },
+        });
+
+        expect(result).to.have.lengthOf(2);
+      });
+
+      it('.find + $and + merge with normal query', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          query: {
+            tag1: { $ne: 'TEST' },
+            $and: [{tag1: {$in: ['TEST', 'TEST2']}}],
+          },
+        });
+
+        expect(result).to.have.lengthOf(1);
+      });
     });
   });
 
