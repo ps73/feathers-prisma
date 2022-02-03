@@ -25,6 +25,7 @@ exports.OPERATORS_MAP = {
     $ne: 'not',
     $eager: 'includes',
     // specific to prisma
+    $rawWhere: 'rawWhere',
     $contains: 'contains',
     $search: 'search',
     $startsWith: 'startsWith',

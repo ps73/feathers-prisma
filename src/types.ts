@@ -28,6 +28,7 @@ export interface QueryParamRecordFilters {
   $gte?: string | number;
   $ne?: string | boolean | number;
   $eager?: EagerQuery;
+  $rawWhere?: Record<string, any>;
   // prisma specific
   $contains?: string;
   $search?: string;

@@ -27,7 +27,11 @@ export const castFeathersQueryToPrismaFilters = (p: QueryParamRecordFilters, whi
       const value = p[key];
       if (Array.isArray(value)) {
         filters[prismaKey] = value.map((v) => castToNumberBooleanStringOrNull(v));
-      } else if (value !== undefined) {
+      } else if (key === '$rawWhere' && typeof value === 'object') {
+        Object.keys(value).forEach((rawKey) => {
+          filters[rawKey] = value[rawKey];
+        });
+      } else if (value !== undefined && typeof value !== 'object') {
         filters[prismaKey] = castToNumberBooleanStringOrNull(value);
       }
     }
@@ -79,7 +83,7 @@ export const castEagerQueryToPrismaInclude = (value: EagerQuery, whitelist: stri
 export const buildWhereAndInclude = (query: QueryParam, whitelist: string[], idField: string) => {
   const where: Record<string, any> = {};
   let include: Record<string, any> = {};
-  Object.keys(query).forEach((k: string | '$or') => {
+  Object.keys(query).forEach((k: string | '$or' | '$rawWhere') => {
     const value = query[k];
     if (k === '$or' && Array.isArray(value)) {
       where.OR = value.map((v) => buildWhereAndInclude(v, whitelist, idField).where);

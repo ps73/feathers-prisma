@@ -76,12 +76,16 @@ const testSuite = adapterTests([
 const app = feathers();
 const prismaClient = new PrismaClient();
 
-prismaClient.$connect();
+try {
+  prismaClient.$connect();
+} catch (e) {
+  console.error(e);
+}
 
 const users = prismaService({
   model: 'user',
   events: ['testing'],
-  whitelist: ['$eager'],
+  whitelist: ['$eager', '$rawWhere'],
 }, prismaClient);
 
 const people = prismaService({
@@ -168,7 +172,7 @@ describe('Feathers Prisma Service', () => {
       it('creates with related items', () => {
         expect(data.todos.length).to.equal(1);
       });
-      it('find with eager loading related item', async () => {
+      it('.find + eager loading related item', async () => {
         const result = await todosService.find({
           query: {
             $eager: {
@@ -178,7 +182,7 @@ describe('Feathers Prisma Service', () => {
         });
         expect(result[0].user.id).to.equal(result[0].userId);
       });
-      it('find with deep eager loading related item', async () => {
+      it('.find + deep eager loading related item', async () => {
         const result = await todosService.find({
           query: {
             $eager: [['user', ['todos', ['user']]]],
@@ -186,14 +190,27 @@ describe('Feathers Prisma Service', () => {
         });
         expect(result[0].user.todos[0].user.id).to.equal(result[0].user.todos[0].userId);
       });
+
+      it('.find + throws $eager type error', async () => {
+        try {
+          await todosService.find({
+            query: {
+              $eager: [true],
+            },
+          });
+          console.error('never goes here');
+        } catch (e) {
+          expect(e.code).to.be.equal('FP1001');
+        }
+      });
     });
 
     describe('custom query', () => {
       beforeEach(async () => {
         await todosService.create([
           { title: 'Lorem', prio: 1, userId: data.id },
-          { title: 'Lorem Ipsum', prio: 1, userId: data.id },
-          { title: '[TODO]', prio: 1, userId: data.id },
+          { title: 'Lorem Ipsum', prio: 1, userId: data.id, tag1: 'TEST' },
+          { title: '[TODO]', prio: 1, userId: data.id, tag1: 'TEST2' },
         ]);
       });
 
@@ -228,6 +245,49 @@ describe('Feathers Prisma Service', () => {
           },
         });
         expect(results.length).to.equal(1);
+      });
+
+      it('.find + query field "null" value', async () => {
+        const results = await todosService.find({
+          query: {
+            tag1: 'null',
+          },
+        });
+        expect(results.length).to.equal(2);
+      });
+
+      it('.find + $rawWhere + query related items', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const result = await usersService.find({
+          query: {
+            todos: {
+              $rawWhere: {
+                some: {
+                  prio: 2,
+                },
+              },
+            },
+            $eager: {
+              todos: true,
+            },
+          },
+        });
+        const result2 = await usersService.find({
+          query: {
+            todos: {
+              $rawWhere: {
+                every: {
+                  done: true,
+                },
+              },
+            },
+          },
+        });
+        expect(result).to.have.lengthOf(1);
+        expect(result2).to.have.lengthOf(0);
       });
     });
   });

@@ -64,11 +64,14 @@
     "@feathersjs/adapter-commons": "^4.5.11",
     "@feathersjs/errors": "^4.5.11"
   },
+  "peerDependencies": {
+    "@prisma/client": ">= 3.7.0"
+  },
   "devDependencies": {
     "@feathersjs/adapter-tests": "^4.5.12",
     "@feathersjs/express": "^4.5.11",
     "@feathersjs/feathers": "^4.5.11",
-    "@prisma/client": "^3.7.0",
+    "@prisma/client": "^3.9.1",
     "@types/node": "^17.0.5",
     "@typescript-eslint/eslint-plugin": "^5.8.1",
     "@typescript-eslint/parser": "^5.8.1",

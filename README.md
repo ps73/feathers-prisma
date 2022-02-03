@@ -73,6 +73,46 @@ app.service("messages").find({
     $eager: [["recipients", ["user"]], "attachments"],
   },
 });
+// selecting specific fields is also supported since 0.4.0
+app.service("messages").find({
+  query: {
+    $eager: {
+      recipients: ["receivedAt", "user"],
+    },
+  },
+});
+```
+
+### Filter with default prisma filters
+
+Since 0.5.0 it is possible to use default prisma filters. This makes it possible to [filter JSON](https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields) fields or to [filter relations](https://www.prisma.io/docs/concepts/components/prisma-client/relation-queries#relation-filters).
+
+The `$rawWhere` property **has to be** set in the `whitelist` option parameter. Otherwise the service will throw an error.
+
+```js
+app.use(
+  "/messages",
+  service(
+    {
+      model: "message",
+      whitelist: ["$rawWhere"],
+    },
+    prismaClient
+  )
+);
+// will load the recipients with the related user
+// as well as all attachments  of the messages
+app.service("messages").find({
+  query: {
+    recipients: {
+      $rawWhere: {
+        some: {
+          userId: 1,
+        },
+      },
+    },
+  },
+});
 ```
 
 ### Batch requests

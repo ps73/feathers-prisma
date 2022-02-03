@@ -20,6 +20,7 @@ export declare const OPERATORS_MAP: {
     $nin: string;
     $ne: string;
     $eager: string;
+    $rawWhere: string;
     $contains: string;
     $search: string;
     $startsWith: string;
