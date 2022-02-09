@@ -89,6 +89,7 @@ const mergeFiltersWithSameKey = (where, key, filter) => {
         const current = typeof where[key] === 'object' ? where[key] || {} : {};
         return Object.assign(Object.assign({}, current), filter);
     }
+    return filter;
 };
 exports.mergeFiltersWithSameKey = mergeFiltersWithSameKey;
 const buildWhereAndInclude = (query, whitelist, idField) => {

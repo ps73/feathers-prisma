@@ -1,4 +1,5 @@
 import { NotFound } from '@feathersjs/errors';
+import { createSecureContext } from 'tls';
 import { OPERATORS_MAP } from './constants';
 import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
@@ -84,7 +85,7 @@ export const mergeFiltersWithSameKey = (
   where: Record<string, any>,
   key: string,
   filter: Record<string, any> | string | number | boolean | null,
-) => {
+): Record<string, any> | string | number | boolean => {
   if (typeof filter === 'object') {
     const current = typeof where[key] === 'object' ? where[key] || {} : {};
 
@@ -93,6 +94,7 @@ export const mergeFiltersWithSameKey = (
       ...filter,
     };
   }
+  return filter;
 };
 
 export const buildWhereAndInclude = (query: QueryParam, whitelist: string[], idField: string) => {

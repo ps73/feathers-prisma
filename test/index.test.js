@@ -336,6 +336,21 @@ describe('Feathers Prisma Service', () => {
 
         expect(result).to.have.lengthOf(1);
       });
+
+      it('.find + $and', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          query: {
+            $and: [{tag1: 'TEST'}],
+          },
+        });
+
+        expect(result).to.have.lengthOf(1);
+      });
     });
   });
 
