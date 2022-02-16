@@ -372,6 +372,24 @@ describe('Feathers Prisma Service', () => {
           expect(e.code).to.be.equal(404);
         }
       });
+
+      it('.get + multiple id queries + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.get(results[0].id, {
+          query: {
+            id: {
+              $in: inIds,
+            }
+          },
+        });
+        expect(result.id).to.be.equal(results[0].id);
+      });
     });
   });
 
