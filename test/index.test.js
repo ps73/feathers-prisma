@@ -305,7 +305,7 @@ describe('Feathers Prisma Service', () => {
         expect(result).to.have.lengthOf(2);
       });
 
-      it('.find + $and + override normal equals', async () => {
+      it('.find + $and + merge with equals', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
@@ -318,7 +318,7 @@ describe('Feathers Prisma Service', () => {
           },
         });
 
-        expect(result).to.have.lengthOf(2);
+        expect(result).to.have.lengthOf(1);
       });
 
       it('.find + $and + merge with normal query', async () => {
