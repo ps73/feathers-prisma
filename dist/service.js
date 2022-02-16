@@ -84,8 +84,11 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
                     id, query, filters, whitelist,
                 }, this.options.id);
-                if (typeof query.id === 'object') {
-                    const result = yield this.Model.findFirst(Object.assign({ where: Object.assign(Object.assign({}, where), { id: Object.assign(Object.assign({}, where.id), { equals: id }) }) }, (0, utils_1.buildSelectOrInclude)({ select, include })));
+                const whereLength = Object.keys(where).filter((k) => k !== this.id).length;
+                const idQueryIsObject = typeof where.id === 'object';
+                if (idQueryIsObject || whereLength > 0) {
+                    const newWhere = idQueryIsObject ? Object.assign(Object.assign({}, where), { [this.id]: Object.assign(Object.assign({}, where[this.id]), { equals: id }) }) : where;
+                    const result = yield this.Model.findFirst(Object.assign({ where: newWhere }, (0, utils_1.buildSelectOrInclude)({ select, include })));
                     if (!result)
                         throw new errors.NotFound(`No record found for id '${id}' and query`);
                     return result;

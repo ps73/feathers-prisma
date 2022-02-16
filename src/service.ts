@@ -84,15 +84,18 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
       const { where, select, include } = buildPrismaQueryParams({
         id, query, filters, whitelist,
       }, this.options.id);
-      if (typeof query.id === 'object') {
-        const result: Partial<ModelData> = await this.Model.findFirst({
-          where: {
-            ...where,
-            id: {
-              ...where.id,
-              equals: id,
-            },
+      const whereLength = Object.keys(where).filter((k) => k !== this.id).length;
+      const idQueryIsObject = typeof where.id === 'object';
+      if (idQueryIsObject || whereLength > 0) {
+        const newWhere = idQueryIsObject ? {
+          ...where,
+          [this.id]: {
+            ...where[this.id],
+            equals: id,
           },
+        } : where;
+        const result: Partial<ModelData> = await this.Model.findFirst({
+          where: newWhere,
           ...buildSelectOrInclude({ select, include }),
         });
         if (!result) throw new errors.NotFound(`No record found for id '${id}' and query`);
