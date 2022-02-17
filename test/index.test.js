@@ -113,6 +113,14 @@ app.use('/todos', todos);
 
 describe('Feathers Prisma Service', () => {
   describe('Initialization', () => {
+    it('clears database', async () => {
+      await prismaClient.$connect();
+      await prismaClient.people.deleteMany({});
+      await prismaClient.user.deleteMany({});
+      await prismaClient.peopleId.deleteMany({});
+      await prismaClient.todo.deleteMany({});
+    });
+
     describe('when missing a model', () => {
       it('throws an error', () =>
         expect(service.bind(null, {}, prismaClient))
@@ -392,6 +400,20 @@ describe('Feathers Prisma Service', () => {
       });
 
       it('.get + additional queries + result', async () => {
+        const created = await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id, tag1: 'TEST3' },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id, tag1: 'TEST' },
+        ]);
+
+        const result = await todosService.get(created[0].id, {
+          query: {
+            $and: [{tag1: {$nin: ['TEST', 'TEST2']}}],
+          },
+        });
+        expect(result.id).to.be.equal(created[0].id);
+      });
+
+      it('.get + id equals query with same id + result', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
@@ -400,12 +422,141 @@ describe('Feathers Prisma Service', () => {
 
         const result = await todosService.get(results[0].id, {
           query: {
-            tag1: {
-              $and: [{tag1: {$nin: ['TEST', 'TEST2']}}],
-            }
+            $and: [{id: results[0].id}],
           },
         });
         expect(result.id).to.be.equal(results[0].id);
+      });
+
+      it('.get + id equals query with other id + NotFound', async () => {
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+
+          await todosService.get(results[0].id, {
+            query: {
+              $and: [{id: results[1].id}],
+            },
+          });
+        } catch (e) {
+          expect(e.code).to.be.equal(404);
+        }
+      });
+
+      it('.remove + multiple id queries + NotFound', async () => {
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+          const inIds = [results[1].id, results[2].id];
+
+          await todosService.remove(results[0].id, {
+            query: {
+              $and: [{id: {$in: inIds}}],
+            },
+          });
+        } catch (e) {
+          expect(e.code).to.be.equal(404);
+        }
+      });
+
+      it('.remove + multiple id queries + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.remove(results[0].id, {
+          query: {
+            $and: [{id: {$in: inIds}}],
+          },
+        });
+        expect(result.id).to.be.equal(results[0].id);
+      });
+
+      it('.update + multiple id queries + NotFound', async () => {
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+          const inIds = [results[1].id, results[2].id];
+
+          await todosService.update(results[0].id, {
+            tag1: 'NEW TAG',
+          }, {
+            query: {
+              $and: [{id: {$in: inIds}}],
+            },
+          });
+        } catch (e) {
+          expect(e.code).to.be.equal(404);
+        }
+      });
+
+      it('.update + multiple id queries + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.update(results[0].id, {
+          tag1: 'NEW TAG',
+        }, {
+          query: {
+            $and: [{id: {$in: inIds}}],
+          },
+        });
+        expect(result.tag1).to.be.equal('NEW TAG');
+      });
+
+      it('.patch + multiple id queries + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.patch(results[0].id, {
+          tag1: 'NEW TAG',
+        }, {
+          query: {
+            $and: [{id: {$in: inIds}}],
+          },
+        });
+        expect(result.tag1).to.be.equal('NEW TAG');
+      });
+
+      it('.patch + multiple id queries + NotFound', async () => {
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+          const inIds = [results[1].id, results[2].id];
+
+          await todosService.update(results[0].id, {
+            tag1: 'NEW TAG',
+          }, {
+            query: {
+              $and: [{id: {$in: inIds}}],
+            },
+          });
+        } catch (e) {
+          expect(e.code).to.be.equal(404);
+        }
       });
     });
   });

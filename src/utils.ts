@@ -1,4 +1,5 @@
 import { NotFound } from '@feathersjs/errors';
+import { NullableId } from '@feathersjs/feathers';
 import { OPERATORS_MAP } from './constants';
 import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
@@ -155,6 +156,8 @@ export const buildPrismaQueryParams = (
   const includeExists = Object.keys(include).length > 0;
   const orderBy = buildOrderBy(filters.$sort || {});
   const { skip, take } = buildPagination(filters.$skip, filters.$limit);
+  const queryWhereExists = Object.keys(where).filter((k) => k !== idField).length > 0;
+  const idQueryIsObject = typeof where.id === 'object';
 
   if (selectExists) {
     select = {
@@ -169,6 +172,10 @@ export const buildPrismaQueryParams = (
       orderBy,
       where,
       select,
+      _helper: {
+        queryWhereExists,
+        idQueryIsObject
+      },
     };
   }
 
@@ -179,6 +186,10 @@ export const buildPrismaQueryParams = (
       orderBy,
       where,
       include,
+      _helper: {
+        queryWhereExists,
+        idQueryIsObject
+      },
     };
   }
 
@@ -187,6 +198,10 @@ export const buildPrismaQueryParams = (
     take,
     orderBy,
     where,
+    _helper: {
+      queryWhereExists,
+      idQueryIsObject
+    },
   };
 };
 
@@ -209,7 +224,20 @@ export const checkIdInQuery = (
     allowOneOf?: boolean;
   }
 ) => {
-  if ((allowOneOf && id && Object.keys(query).length > 0) || (id && query[idField])) {
+  if ((allowOneOf && id && Object.keys(query).length > 0) || (id && query[idField] && id !== query[idField])) {
     throw new NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
   }
+};
+
+export const buildWhereWithOptionalIdObject = (id: NullableId, where: Record<string, any>, idField: string) => {
+  if (typeof where.id === 'object') {
+    return {
+      ...where,
+      [idField]: {
+        ...where[idField],
+        equals: id,
+      },
+    };
+  }
+  return where;
 };

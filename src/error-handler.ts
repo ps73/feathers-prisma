@@ -29,36 +29,36 @@ export function errorHandler(error: any, prismaMethod?: string) {
     } = error;
     const errType = getType(Number(code.substring(1)));
     switch (errType) {
-    case 'common':
-      feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
-      break;
-    case 'query':
-      feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
-      if (code === 'P2025') {
+      case 'common':
+        feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
+        break;
+      case 'query':
+        feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
+        if (code === 'P2025') {
         // @ts-ignore
-        feathersError = new errors.NotFound(meta?.cause || 'Record not found.');
-      }
-      break;
-    case 'migration':
-      feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
-      break;
-    case 'introspection':
-      feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
-      break;
-    default:
-      feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
-      break;
+          feathersError = new errors.NotFound(meta?.cause || 'Record not found.');
+        }
+        break;
+      case 'migration':
+        feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
+        break;
+      case 'introspection':
+        feathersError = new errors.GeneralError(message, { code, meta, clientVersion });
+        break;
+      default:
+        feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
+        break;
     }
   } else if (error instanceof PrismaClientValidationError) {
     switch (prismaMethod) {
-    case 'findUnique':
-    case 'remove':
-    case 'update':
-      feathersError = new errors.NotFound('Record not found.');
-      break;
-    default:
-      feathersError = new errors.GeneralError(error);
-      break;
+      case 'findUnique':
+      case 'remove':
+      case 'update':
+        feathersError = new errors.NotFound('Record not found.');
+        break;
+      default:
+        feathersError = new errors.GeneralError(error);
+        break;
     }
   }
 

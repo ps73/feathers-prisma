@@ -81,14 +81,11 @@ class PrismaService extends adapter_commons_1.AdapterService {
             try {
                 const { query, filters } = this.filterQuery(params);
                 const { whitelist } = this.options;
-                const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                    id, query, filters, whitelist,
+                const { where, select, include, _helper } = (0, utils_1.buildPrismaQueryParams)({
+                    id, query, filters, whitelist
                 }, this.options.id);
-                const whereLength = Object.keys(where).filter((k) => k !== this.id).length;
-                const idQueryIsObject = typeof where.id === 'object';
-                if (idQueryIsObject || whereLength > 0) {
-                    const newWhere = idQueryIsObject ? Object.assign(Object.assign({}, where), { [this.id]: Object.assign(Object.assign({}, where[this.id]), { equals: id }) }) : where;
-                    const result = yield this.Model.findFirst(Object.assign({ where: newWhere }, (0, utils_1.buildSelectOrInclude)({ select, include })));
+                if (_helper.idQueryIsObject || _helper.queryWhereExists) {
+                    const result = yield this.Model.findFirst(Object.assign({ where: (0, utils_1.buildWhereWithOptionalIdObject)(id, where, this.options.id) }, (0, utils_1.buildSelectOrInclude)({ select, include })));
                     if (!result)
                         throw new errors.NotFound(`No record found for id '${id}' and query`);
                     return result;
@@ -126,10 +123,20 @@ class PrismaService extends adapter_commons_1.AdapterService {
         return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
-            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
+            const { where, select, include, _helper } = (0, utils_1.buildPrismaQueryParams)({
                 id, query, filters, whitelist,
             }, this.options.id);
             try {
+                if (_helper.idQueryIsObject) {
+                    const newWhere = (0, utils_1.buildWhereWithOptionalIdObject)(id, where, this.options.id);
+                    const [, result] = yield this.client.$transaction([
+                        this.Model.updateMany(Object.assign({ data, where: newWhere }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
+                        this.Model.findFirst(Object.assign({ where: Object.assign(Object.assign({}, newWhere), data) }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
+                    ]);
+                    if (!result)
+                        throw new errors.NotFound(`No record found for id '${id}'`);
+                    return result;
+                }
                 (0, utils_1.checkIdInQuery)({ id, query, idField: this.options.id });
                 const result = yield this.Model.update(Object.assign({ data,
                     where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
@@ -169,10 +176,10 @@ class PrismaService extends adapter_commons_1.AdapterService {
         return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
-            if (id) {
-                const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                    id, query, filters, whitelist,
-                }, this.options.id);
+            const { where, select, include, _helper } = (0, utils_1.buildPrismaQueryParams)({
+                id: id || undefined, query, filters, whitelist,
+            }, this.options.id);
+            if (id && !_helper.idQueryIsObject) {
                 try {
                     (0, utils_1.checkIdInQuery)({ id, query, allowOneOf: true, idField: this.options.id });
                     const result = yield this.Model.delete(Object.assign({ where: id ? { [this.options.id]: id } : where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
@@ -182,13 +189,14 @@ class PrismaService extends adapter_commons_1.AdapterService {
                     (0, error_handler_1.errorHandler)(e, 'delete');
                 }
             }
-            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist }, this.options.id);
             try {
-                const query = Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include }));
+                const query = Object.assign({ where: id ? (0, utils_1.buildWhereWithOptionalIdObject)(id, where, this.options.id) : where }, (0, utils_1.buildSelectOrInclude)({ select, include }));
                 const [data] = yield this.client.$transaction([
-                    this.Model.findMany(query),
+                    id ? this.Model.findFirst(query) : this.Model.findMany(query),
                     this.Model.deleteMany(query),
                 ]);
+                if (id && !data)
+                    throw new errors.NotFound(`No record found for id '${id}'`);
                 return data;
             }
             catch (e) {

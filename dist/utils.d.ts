@@ -1,3 +1,4 @@
+import { NullableId } from '@feathersjs/feathers';
 import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
 export declare const castToNumberBooleanStringOrNull: (value: string | boolean | number) => string | number | boolean | null;
 export declare const castFeathersQueryToPrismaFilters: (p: QueryParamRecordFilters, whitelist: string[]) => Record<string, any>;
@@ -28,6 +29,10 @@ export declare const buildPrismaQueryParams: ({ id, query, filters, whitelist }:
     }[];
     where: Record<string, any>;
     select: Record<string, boolean>;
+    _helper: {
+        queryWhereExists: boolean;
+        idQueryIsObject: boolean;
+    };
     include?: undefined;
 } | {
     skip: number;
@@ -37,6 +42,10 @@ export declare const buildPrismaQueryParams: ({ id, query, filters, whitelist }:
     }[];
     where: Record<string, any>;
     include: Record<string, any>;
+    _helper: {
+        queryWhereExists: boolean;
+        idQueryIsObject: boolean;
+    };
     select?: undefined;
 } | {
     skip: number;
@@ -45,6 +54,10 @@ export declare const buildPrismaQueryParams: ({ id, query, filters, whitelist }:
         [x: string]: string;
     }[];
     where: Record<string, any>;
+    _helper: {
+        queryWhereExists: boolean;
+        idQueryIsObject: boolean;
+    };
     select?: undefined;
     include?: undefined;
 };
@@ -67,3 +80,4 @@ export declare const checkIdInQuery: ({ id, query, idField, allowOneOf, }: {
     idField: string;
     allowOneOf?: boolean | undefined;
 }) => void;
+export declare const buildWhereWithOptionalIdObject: (id: NullableId, where: Record<string, any>, idField: string) => Record<string, any>;

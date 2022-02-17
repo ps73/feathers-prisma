@@ -19,10 +19,8 @@ module.exports = {
   'rules': {
     '@typescript-eslint/ban-ts-comment': 0,
     '@typescript-eslint/no-explicit-any': 0,
-    'indent': [
-      'error',
-      2
-    ],
+    '@typescript-eslint/indent': ['error', 2],
+    'indent': 'off',
     'linebreak-style': [
       'error',
       'unix'
