@@ -40,44 +40,47 @@ export const castFeathersQueryToPrismaFilters = (p: QueryParamRecordFilters, whi
 };
 
 export const castEagerQueryToPrismaInclude = (value: EagerQuery, whitelist: string[], idField: string) => {
-  const include: Record<string, any> = {};
-  if (Array.isArray(value)) {
-    value.forEach((v) => {
-      if (Array.isArray(v) && typeof v[0] === 'string' && v.length > 1) {
-        const [key, ...includes] = v;
-        const subinclude = castEagerQueryToPrismaInclude(includes, whitelist, idField);
-        include[key] = {
-          include: subinclude,
-        };
-      } else if (Array.isArray(v) && typeof v[0] === 'string' && v.length === 1) {
-        const [key] = v;
-        include[key] = true;
-      } else if (typeof v[0] !== 'string') {
-        throw {
-          code: 'FP1001',
-          message: 'First Array Item in a sub-array must be a string!',
-        };
-      } else if (typeof v === 'string') {
-        include[v] = true;
-      }
-    });
-  } else {
-    Object.keys(value).forEach((key) => {
-      const val = value[key];
-      if (typeof val === 'boolean') {
-        include[key] = val;
-      } else if (Array.isArray(val)) {
-        include[key] = {
-          select: {
-            [idField]: true,
-            ...buildSelect(val),
-          },
-        };
-      }
-    });
-  }
+  // we don't care about feathers compliance, we want where queries in our include
+  // thus just returnung the $eager value as include 1:1
+  return value;
+  // const include: Record<string, any> = {};
+  // if (Array.isArray(value)) {
+  //   value.forEach((v) => {
+  //     if (Array.isArray(v) && typeof v[0] === 'string' && v.length > 1) {
+  //       const [key, ...includes] = v;
+  //       const subinclude = castEagerQueryToPrismaInclude(includes, whitelist, idField);
+  //       include[key] = {
+  //         include: subinclude,
+  //       };
+  //     } else if (Array.isArray(v) && typeof v[0] === 'string' && v.length === 1) {
+  //       const [key] = v;
+  //       include[key] = true;
+  //     } else if (typeof v[0] !== 'string') {
+  //       throw {
+  //         code: 'FP1001',
+  //         message: 'First Array Item in a sub-array must be a string!',
+  //       };
+  //     } else if (typeof v === 'string') {
+  //       include[v] = true;
+  //     }
+  //   });
+  // } else {
+  //   Object.keys(value).forEach((key) => {
+  //     const val = value[key];
+  //     if (typeof val === 'boolean') {
+  //       include[key] = val;
+  //     } else if (Array.isArray(val)) {
+  //       include[key] = {
+  //         select: {
+  //           [idField]: true,
+  //           ...buildSelect(val),
+  //         },
+  //       };
+  //     }
+  //   });
+  // }
 
-  return include;
+  // return include;
 };
 
 export const mergeFiltersWithSameKey = (
