@@ -25,6 +25,10 @@
     "type": "git",
     "url": "git://github.com/triggercode/feathers-prisma.git"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "author": {
     "name": "ps73",
     "email": "ps7330e@gmail.com",
