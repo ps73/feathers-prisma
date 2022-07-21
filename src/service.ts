@@ -22,6 +22,7 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
       filters: options.filters || [],
       events: options.events || [],
       whitelist: Object.values(OPERATORS).concat(options.whitelist || []),
+      model: options.model || ''
     });
 
     const { model } = options;

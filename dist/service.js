@@ -28,6 +28,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
             filters: options.filters || [],
             events: options.events || [],
             whitelist: Object.values(constants_1.OPERATORS).concat(options.whitelist || []),
+            model: options.model || ''
         });
         const { model } = options;
         if (!model) {
