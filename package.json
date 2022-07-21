@@ -1,8 +1,8 @@
 {
-  "name": "feathers-prisma",
+  "name": "@triggercode/feathers-prisma",
   "description": "A Feathers service adapter for Prisma ORM.",
   "version": "0.6.0",
-  "homepage": "https://github.com/ps73/feathers-prisma",
+  "homepage": "https://github.com/triggercode/feathers-prisma",
   "main": "dist/",
   "types": "dist/",
   "files": [
@@ -23,7 +23,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/ps73/feathers-prisma.git"
+    "url": "git://github.com/triggercode/feathers-prisma.git"
   },
   "author": {
     "name": "ps73",
@@ -32,7 +32,7 @@
   },
   "contributors": [],
   "bugs": {
-    "url": "https://github.com/ps73/feathers-prisma/issues"
+    "url": "https://github.com/triggercode/feathers-prisma/issues"
   },
   "engines": {
     "node": ">= 14.17"
