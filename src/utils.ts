@@ -232,15 +232,14 @@ export const checkIdInQuery = (
 };
 
 export const buildWhereWithOptionalIdObject = (id: NullableId, where: Record<string, any>, idField: string) => {
-  // the equals operator is not working in prisma
-  // if (typeof where.id === 'object') {
-  //   return {
-  //     ...where,
-  //     [idField]: {
-  //       ...where[idField],
-  //       equals: id,
-  //     },
-  //   };
-  // }
+  if (typeof where.id === 'object') {
+    return {
+      ...where,
+      [idField]: {
+        ...where[idField],
+        equals: id,
+      },
+    };
+  }
   return where;
 };
