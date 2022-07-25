@@ -200,16 +200,9 @@ const checkIdInQuery = ({ id, query, idField, allowOneOf, }) => {
 };
 exports.checkIdInQuery = checkIdInQuery;
 const buildWhereWithOptionalIdObject = (id, where, idField) => {
-    // the equals operator is not working in prisma
-    // if (typeof where.id === 'object') {
-    //   return {
-    //     ...where,
-    //     [idField]: {
-    //       ...where[idField],
-    //       equals: id,
-    //     },
-    //   };
-    // }
+    if (typeof where.id === 'object') {
+        return Object.assign(Object.assign({}, where), { [idField]: Object.assign(Object.assign({}, where[idField]), { equals: id }) });
+    }
     return where;
 };
 exports.buildWhereWithOptionalIdObject = buildWhereWithOptionalIdObject;
