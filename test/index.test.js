@@ -150,7 +150,7 @@ describe('Feathers Prisma Service', () => {
     });
   });
 
-  describe('Custom tests', () => {
+  describe.skip('Custom tests', () => {
     const usersService = app.service('users');
     const todosService = app.service('todos');
 
@@ -306,7 +306,7 @@ describe('Feathers Prisma Service', () => {
 
         const result = await todosService.find({
           query: {
-            $and: [{tag1: {$in: ['TEST', 'TEST2']}}]
+            $and: [{ tag1: { $in: ['TEST', 'TEST2'] } }]
           },
         });
 
@@ -322,7 +322,7 @@ describe('Feathers Prisma Service', () => {
         const result = await todosService.find({
           query: {
             tag1: 'TEST',
-            $and: [{tag1: {$in: ['TEST', 'TEST2']}}],
+            $and: [{ tag1: { $in: ['TEST', 'TEST2'] } }],
           },
         });
 
@@ -338,7 +338,7 @@ describe('Feathers Prisma Service', () => {
         const result = await todosService.find({
           query: {
             tag1: { $ne: 'TEST' },
-            $and: [{tag1: {$in: ['TEST', 'TEST2']}}],
+            $and: [{ tag1: { $in: ['TEST', 'TEST2'] } }],
           },
         });
 
@@ -353,7 +353,7 @@ describe('Feathers Prisma Service', () => {
 
         const result = await todosService.find({
           query: {
-            $and: [{tag1: 'TEST'}],
+            $and: [{ tag1: 'TEST' }],
           },
         });
 
@@ -407,7 +407,7 @@ describe('Feathers Prisma Service', () => {
 
         const result = await todosService.get(created[0].id, {
           query: {
-            $and: [{tag1: {$nin: ['TEST', 'TEST2']}}],
+            $and: [{ tag1: { $nin: ['TEST', 'TEST2'] } }],
           },
         });
         expect(result.id).to.be.equal(created[0].id);
@@ -422,7 +422,7 @@ describe('Feathers Prisma Service', () => {
 
         const result = await todosService.get(results[0].id, {
           query: {
-            $and: [{id: results[0].id}],
+            $and: [{ id: results[0].id }],
           },
         });
         expect(result.id).to.be.equal(results[0].id);
@@ -438,7 +438,7 @@ describe('Feathers Prisma Service', () => {
 
           await todosService.get(results[0].id, {
             query: {
-              $and: [{id: results[1].id}],
+              $and: [{ id: results[1].id }],
             },
           });
         } catch (e) {
@@ -457,7 +457,7 @@ describe('Feathers Prisma Service', () => {
 
           await todosService.remove(results[0].id, {
             query: {
-              $and: [{id: {$in: inIds}}],
+              $and: [{ id: { $in: inIds } }],
             },
           });
         } catch (e) {
@@ -475,7 +475,7 @@ describe('Feathers Prisma Service', () => {
 
         const result = await todosService.remove(results[0].id, {
           query: {
-            $and: [{id: {$in: inIds}}],
+            $and: [{ id: { $in: inIds } }],
           },
         });
         expect(result.id).to.be.equal(results[0].id);
@@ -494,7 +494,7 @@ describe('Feathers Prisma Service', () => {
             tag1: 'NEW TAG',
           }, {
             query: {
-              $and: [{id: {$in: inIds}}],
+              $and: [{ id: { $in: inIds } }],
             },
           });
         } catch (e) {
@@ -514,7 +514,7 @@ describe('Feathers Prisma Service', () => {
           tag1: 'NEW TAG',
         }, {
           query: {
-            $and: [{id: {$in: inIds}}],
+            $and: [{ id: { $in: inIds } }],
           },
         });
         expect(result.tag1).to.be.equal('NEW TAG');
@@ -532,7 +532,7 @@ describe('Feathers Prisma Service', () => {
           tag1: 'NEW TAG',
         }, {
           query: {
-            $and: [{id: {$in: inIds}}],
+            $and: [{ id: { $in: inIds } }],
           },
         });
         expect(result.tag1).to.be.equal('NEW TAG');
@@ -551,7 +551,7 @@ describe('Feathers Prisma Service', () => {
             tag1: 'NEW TAG',
           }, {
             query: {
-              $and: [{id: {$in: inIds}}],
+              $and: [{ id: { $in: inIds } }],
             },
           });
         } catch (e) {
