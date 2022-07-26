@@ -35,7 +35,7 @@ export function errorHandler(error: any, prismaMethod?: string) {
       case 'query':
         feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
         if (code === 'P2025') {
-        // @ts-ignore
+          // @ts-ignore
           feathersError = new errors.NotFound(meta?.cause || 'Record not found.');
         }
         break;
@@ -54,6 +54,7 @@ export function errorHandler(error: any, prismaMethod?: string) {
       case 'findUnique':
       case 'remove':
       case 'update':
+      case 'delete':
         feathersError = new errors.NotFound('Record not found.');
         break;
       default:

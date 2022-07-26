@@ -3,7 +3,7 @@ import { AdapterService } from '@feathersjs/adapter-commons';
 import * as errors from '@feathersjs/errors';
 import { PrismaClient } from '@prisma/client';
 import { IdField, PrismaServiceOptions } from './types';
-import { buildPrismaQueryParams, buildSelectOrInclude, buildWhereWithOptionalIdObject, checkIdInQuery } from './utils';
+import { buildPrismaQueryParams, buildSelectOrInclude, checkIdInQuery } from './utils';
 import { OPERATORS } from './constants';
 import { errorHandler } from './error-handler';
 
@@ -82,23 +82,16 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     try {
       const { query, filters } = this.filterQuery(params);
       const { whitelist } = this.options;
-      const { where, select, include, _helper } = buildPrismaQueryParams({
+      const { where, select, include } = buildPrismaQueryParams({
         id, query, filters, whitelist
       }, this.options.id);
-      if (_helper.idQueryIsObject || _helper.queryWhereExists) {
-        const result: Partial<ModelData> = await this.Model.findFirst({
-          where: buildWhereWithOptionalIdObject(id, where, this.options.id),
-          ...buildSelectOrInclude({ select, include }),
-        });
-        if (!result) throw new errors.NotFound(`No record found for id '${id}' and query`);
-        return result;
-      }
-      checkIdInQuery({ id, query, idField: this.options.id });
+
+      checkIdInQuery(id, query, this.options.id);
       const result: Partial<ModelData> = await this.Model.findUnique({
         where,
         ...buildSelectOrInclude({ select, include }),
       });
-      if (!result) throw new errors.NotFound(`No record found for id '${id}'`);
+      if (!result) throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
       return result;
     } catch (e) {
       errorHandler(e, 'findUnique');
@@ -127,55 +120,30 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     }
   }
 
-  async _update(id: IdField, data: Partial<ModelData>, params: Params = {}, returnResult = false) {
-    const { query, filters } = this.filterQuery(params);
-    const { whitelist } = this.options;
-    const { where, select, include, _helper } = buildPrismaQueryParams({
-      id, query, filters, whitelist,
-    }, this.options.id);
-    try {
-      if (_helper.idQueryIsObject) {
-        const newWhere = buildWhereWithOptionalIdObject(id, where, this.options.id);
-        const [, result] = await this.client.$transaction([
-          this.Model.updateMany({
-            data,
-            where: newWhere,
-            ...buildSelectOrInclude({ select, include }),
-          }),
-          this.Model.findFirst({
-            where: {
-              ...newWhere,
-              ...data,
-            },
-            ...buildSelectOrInclude({ select, include }),
-          }),
-        ]);
-        if (!result) throw new errors.NotFound(`No record found for id '${id}'`);
-        return result;
-      }
-      checkIdInQuery({ id, query, idField: this.options.id });
-      const result = await this.Model.update({
-        data,
-        where,
-        ...buildSelectOrInclude({ select, include }),
-      });
-      if (select || returnResult) {
-        return result;
-      }
-      return { [this.options.id]: result.id, ...data };
-    } catch (e) {
-      errorHandler(e, 'update');
-    }
+  async _update(id: IdField | null, data: Partial<ModelData>, params: Params = {}) {
+    return this._patchOrUpdate(id, data, params, false);
   }
 
   async _patch(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params: Params = {}) {
-    if (id && !Array.isArray(data)) {
-      const result = await this._update(id, data, params, true);
-      return result;
-    }
+    return this._patchOrUpdate(id, data, params);
+  }
+
+  async _patchOrUpdate(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params: Params = {}, shouldReturnResult = true) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
-    const { where, select, include } = buildPrismaQueryParams({ query, filters, whitelist }, this.options.id);
+    const { where, select, include }
+      = buildPrismaQueryParams({ id: id || undefined, query, filters, whitelist }, this.options.id);
+
+    if (id === null) {
+      return await this._patchOrUpdateMany(data, where, select, include);
+    } else {
+      checkIdInQuery(id, query, this.options.id);
+      return await this._patchOrUpdateSingle(data, where, select, include, shouldReturnResult);
+    }
+
+  }
+
+  async _patchOrUpdateMany(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any) {
     try {
       const [, result] = await this.client.$transaction([
         this.Model.updateMany({
@@ -197,34 +165,60 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     }
   }
 
+  async _patchOrUpdateSingle(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean) {
+    try {
+      const result = await this.Model.update({
+        data,
+        where,
+        ...buildSelectOrInclude({ select, include }),
+      });
+
+      if (select || shouldReturnResult) {
+        return result;
+      }
+      return { [this.options.id]: result.id, ...data };
+    } catch (e) {
+      console.log('updateSingle', e);
+
+      errorHandler(e, 'update');
+    }
+  }
+
   async _remove(id: IdField | null, params: Params = {}) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
-    const { where, select, include, _helper } = buildPrismaQueryParams({
+    const { where, select, include } = buildPrismaQueryParams({
       id: id || undefined, query, filters, whitelist,
     }, this.options.id);
-    if (id && !_helper.idQueryIsObject) {
-      try {
-        checkIdInQuery({ id, query, allowOneOf: true, idField: this.options.id });
-        const result: Partial<ModelData> = await this.Model.delete({
-          where: id ? { [this.options.id]: id } : where,
-          ...buildSelectOrInclude({ select, include }),
-        });
-        return result;
-      } catch (e) {
-        errorHandler(e, 'delete');
-      }
+    if (id === null) {
+      return this._removeMany(where, select, include);
+    } else {
+      checkIdInQuery(id, query, this.options.id);
+      return this._removeSingle(where, select, include);
     }
+  }
+
+  async _removeSingle(where: any, select: any, include: any) {
+    try {
+      return await this.Model.delete({
+        where: where,
+        ...buildSelectOrInclude({ select, include }),
+      });
+    } catch (e) {
+      errorHandler(e, 'delete');
+    }
+  }
+
+  async _removeMany(where: any, select: any, include: any) {
     try {
       const query = {
-        where: id ? buildWhereWithOptionalIdObject(id, where, this.options.id) : where,
+        where: where,
         ...buildSelectOrInclude({ select, include }),
       };
       const [data] = await this.client.$transaction([
-        id ? this.Model.findFirst(query) : this.Model.findMany(query),
+        this.Model.findMany(query),
         this.Model.deleteMany(query),
       ]);
-      if (id && !data) throw new errors.NotFound(`No record found for id '${id}'`);
       return data;
     } catch (e) {
       errorHandler(e, 'deleteMany');

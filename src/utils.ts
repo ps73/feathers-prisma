@@ -213,33 +213,8 @@ export const buildSelectOrInclude = (
   return select ? { select } : include ? { include } : {};
 };
 
-export const checkIdInQuery = (
-  {
-    id,
-    query,
-    idField,
-    allowOneOf,
-  }: {
-    id: IdField | null;
-    query: Record<string, any>;
-    idField: string;
-    allowOneOf?: boolean;
-  }
-) => {
-  if ((allowOneOf && id && Object.keys(query).length > 0) || (id && query[idField] && id !== query[idField])) {
+export const checkIdInQuery = (id: IdField | null, query: Record<string, any>, idField: string) => {
+  if (id && query[idField] && id !== query[idField]) {
     throw new NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
   }
-};
-
-export const buildWhereWithOptionalIdObject = (id: NullableId, where: Record<string, any>, idField: string) => {
-  if (typeof where.id === 'object') {
-    return {
-      ...where,
-      [idField]: {
-        ...where[idField],
-        equals: id,
-      },
-    };
-  }
-  return where;
 };
