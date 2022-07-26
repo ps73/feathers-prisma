@@ -55,6 +55,7 @@ function errorHandler(error, prismaMethod) {
             case 'findUnique':
             case 'remove':
             case 'update':
+            case 'delete':
                 feathersError = new errors.NotFound('Record not found.');
                 break;
             default:

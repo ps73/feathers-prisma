@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildWhereWithOptionalIdObject = exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const errors_1 = require("@feathersjs/errors");
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
@@ -192,16 +192,9 @@ const buildSelectOrInclude = ({ select, include }) => {
     return select ? { select } : include ? { include } : {};
 };
 exports.buildSelectOrInclude = buildSelectOrInclude;
-const checkIdInQuery = ({ id, query, idField, allowOneOf, }) => {
-    if ((allowOneOf && id && Object.keys(query).length > 0) || (id && query[idField] && id !== query[idField])) {
+const checkIdInQuery = (id, query, idField) => {
+    if (id && query[idField] && id !== query[idField]) {
         throw new errors_1.NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
     }
 };
 exports.checkIdInQuery = checkIdInQuery;
-const buildWhereWithOptionalIdObject = (id, where, idField) => {
-    if (typeof where.id === 'object') {
-        return Object.assign(Object.assign({}, where), { [idField]: Object.assign(Object.assign({}, where[idField]), { equals: id }) });
-    }
-    return where;
-};
-exports.buildWhereWithOptionalIdObject = buildWhereWithOptionalIdObject;

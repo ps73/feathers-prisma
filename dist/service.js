@@ -82,19 +82,13 @@ class PrismaService extends adapter_commons_1.AdapterService {
             try {
                 const { query, filters } = this.filterQuery(params);
                 const { whitelist } = this.options;
-                const { where, select, include, _helper } = (0, utils_1.buildPrismaQueryParams)({
+                const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
                     id, query, filters, whitelist
                 }, this.options.id);
-                if (_helper.idQueryIsObject || _helper.queryWhereExists) {
-                    const result = yield this.Model.findFirst(Object.assign({ where: (0, utils_1.buildWhereWithOptionalIdObject)(id, where, this.options.id) }, (0, utils_1.buildSelectOrInclude)({ select, include })));
-                    if (!result)
-                        throw new errors.NotFound(`No record found for id '${id}' and query`);
-                    return result;
-                }
-                (0, utils_1.checkIdInQuery)({ id, query, idField: this.options.id });
+                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
                 const result = yield this.Model.findUnique(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
                 if (!result)
-                    throw new errors.NotFound(`No record found for id '${id}'`);
+                    throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
                 return result;
             }
             catch (e) {
@@ -120,46 +114,32 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
-    _update(id, data, params = {}, returnResult = false) {
+    _update(id, data, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { query, filters } = this.filterQuery(params);
-            const { whitelist } = this.options;
-            const { where, select, include, _helper } = (0, utils_1.buildPrismaQueryParams)({
-                id, query, filters, whitelist,
-            }, this.options.id);
-            try {
-                if (_helper.idQueryIsObject) {
-                    const newWhere = (0, utils_1.buildWhereWithOptionalIdObject)(id, where, this.options.id);
-                    const [, result] = yield this.client.$transaction([
-                        this.Model.updateMany(Object.assign({ data, where: newWhere }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
-                        this.Model.findFirst(Object.assign({ where: Object.assign(Object.assign({}, newWhere), data) }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
-                    ]);
-                    if (!result)
-                        throw new errors.NotFound(`No record found for id '${id}'`);
-                    return result;
-                }
-                (0, utils_1.checkIdInQuery)({ id, query, idField: this.options.id });
-                const result = yield this.Model.update(Object.assign({ data,
-                    where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
-                if (select || returnResult) {
-                    return result;
-                }
-                return Object.assign({ [this.options.id]: result.id }, data);
-            }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e, 'update');
-            }
+            return this._patchOrUpdate(id, data, params, false);
         });
     }
     _patch(id, data, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (id && !Array.isArray(data)) {
-                const result = yield this._update(id, data, params, true);
-                return result;
-            }
+            return this._patchOrUpdate(id, data, params);
+        });
+    }
+    _patchOrUpdate(id, data, params = {}, shouldReturnResult = true) {
+        return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
-            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist }, this.options.id);
+            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ id: id || undefined, query, filters, whitelist }, this.options.id);
+            if (id === null) {
+                return yield this._patchOrUpdateMany(data, where, select, include);
+            }
+            else {
+                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
+                return yield this._patchOrUpdateSingle(data, where, select, include, shouldReturnResult);
+            }
+        });
+    }
+    _patchOrUpdateMany(data, where, select, include) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
                 const [, result] = yield this.client.$transaction([
                     this.Model.updateMany(Object.assign({ data,
@@ -173,31 +153,56 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
+    _patchOrUpdateSingle(data, where, select, include, shouldReturnResult) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const result = yield this.Model.update(Object.assign({ data,
+                    where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
+                if (select || shouldReturnResult) {
+                    return result;
+                }
+                return Object.assign({ [this.options.id]: result.id }, data);
+            }
+            catch (e) {
+                console.log('updateSingle', e);
+                (0, error_handler_1.errorHandler)(e, 'update');
+            }
+        });
+    }
     _remove(id, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
-            const { where, select, include, _helper } = (0, utils_1.buildPrismaQueryParams)({
+            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
                 id: id || undefined, query, filters, whitelist,
             }, this.options.id);
-            if (id && !_helper.idQueryIsObject) {
-                try {
-                    (0, utils_1.checkIdInQuery)({ id, query, allowOneOf: true, idField: this.options.id });
-                    const result = yield this.Model.delete(Object.assign({ where: id ? { [this.options.id]: id } : where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
-                    return result;
-                }
-                catch (e) {
-                    (0, error_handler_1.errorHandler)(e, 'delete');
-                }
+            if (id === null) {
+                return this._removeMany(where, select, include);
             }
+            else {
+                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
+                return this._removeSingle(where, select, include);
+            }
+        });
+    }
+    _removeSingle(where, select, include) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
-                const query = Object.assign({ where: id ? (0, utils_1.buildWhereWithOptionalIdObject)(id, where, this.options.id) : where }, (0, utils_1.buildSelectOrInclude)({ select, include }));
+                return yield this.Model.delete(Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
+            }
+            catch (e) {
+                (0, error_handler_1.errorHandler)(e, 'delete');
+            }
+        });
+    }
+    _removeMany(where, select, include) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const query = Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include }));
                 const [data] = yield this.client.$transaction([
-                    id ? this.Model.findFirst(query) : this.Model.findMany(query),
+                    this.Model.findMany(query),
                     this.Model.deleteMany(query),
                 ]);
-                if (id && !data)
-                    throw new errors.NotFound(`No record found for id '${id}'`);
                 return data;
             }
             catch (e) {
