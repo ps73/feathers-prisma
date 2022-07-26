@@ -35,7 +35,7 @@ module.exports = {
     ],
     'import/no-import-module-exports': 'off',
     'no-underscore-dangle': 'off',
-    'max-len': ['warn', { code: 120 }],
+    'max-len': ['warn', { code: 180 }],
   },
   overrides: [
     {
