@@ -54,7 +54,8 @@
     "lint": "eslint src/*.ts src/**/*.ts test/*.js test/**/*.js --fix",
     "mocha": "mocha --opts mocha.opts",
     "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --config=.mocharc.json",
-    "test": "npm run compile && npm run lint -- --cache && npm run coverage"
+    "test": "npm run compile && npm run lint -- --cache && npm run coverage",
+    "postversion": "git push && git push --tags"
   },
   "semistandard": {
     "env": [
