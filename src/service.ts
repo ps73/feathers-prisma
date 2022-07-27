@@ -178,8 +178,6 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
       }
       return { [this.options.id]: result.id, ...data };
     } catch (e) {
-      console.log('updateSingle', e);
-
       errorHandler(e, 'update');
     }
   }

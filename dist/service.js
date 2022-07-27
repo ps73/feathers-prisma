@@ -164,7 +164,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 return Object.assign({ [this.options.id]: result.id }, data);
             }
             catch (e) {
-                console.log('updateSingle', e);
                 (0, error_handler_1.errorHandler)(e, 'update');
             }
         });
