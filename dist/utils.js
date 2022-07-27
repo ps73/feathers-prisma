@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const errors_1 = require("@feathersjs/errors");
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
@@ -93,11 +93,26 @@ const mergeFiltersWithSameKey = (where, key, filter) => {
     return filter;
 };
 exports.mergeFiltersWithSameKey = mergeFiltersWithSameKey;
+const buildIdField = (value, whitelist) => {
+    if (value !== null && typeof value === 'object') {
+        const filters = (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist);
+        const filterKeys = Object.keys(constants_1.OPERATORS_MAP);
+        filterKeys.forEach((key) => {
+            key in value && delete value[key];
+        });
+        return Object.assign(Object.assign({}, value), filters);
+    }
+    return value;
+};
+exports.buildIdField = buildIdField;
 const buildWhereAndInclude = (query, whitelist, idField) => {
     const where = {};
     let include = {};
     Object.keys(query).forEach((k) => {
         const value = query[k];
+        if (k === idField) {
+            where[k] = (0, exports.mergeFiltersWithSameKey)(where, k, (0, exports.buildIdField)(value, whitelist));
+        }
         if (k === '$or' && Array.isArray(value)) {
             where.OR = value.map((v) => (0, exports.buildWhereAndInclude)(v, whitelist, idField).where);
         }
@@ -140,6 +155,8 @@ const buildPagination = ($skip, $limit) => {
     };
 };
 exports.buildPagination = buildPagination;
+const hasIdObject = (where, id) => id && !where.id && id !== null && typeof id === 'object';
+exports.hasIdObject = hasIdObject;
 const buildPrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
     let select = (0, exports.buildSelect)(filters.$select || []);
     const selectExists = Object.keys(select).length > 0;
@@ -147,20 +164,14 @@ const buildPrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
     const includeExists = Object.keys(include).length > 0;
     const orderBy = (0, exports.buildOrderBy)(filters.$sort || {});
     const { skip, take } = (0, exports.buildPagination)(filters.$skip, filters.$limit);
-    const queryWhereExists = Object.keys(where).filter((k) => k !== idField).length > 0;
-    const idQueryIsObject = typeof where.id === 'object';
     if (selectExists) {
         select = Object.assign(Object.assign({ [idField]: true }, select), include);
         return {
             skip,
             take,
             orderBy,
-            where,
+            where: where,
             select,
-            _helper: {
-                queryWhereExists,
-                idQueryIsObject
-            },
         };
     }
     if (!selectExists && includeExists) {
@@ -168,23 +179,15 @@ const buildPrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
             skip,
             take,
             orderBy,
-            where,
-            include,
-            _helper: {
-                queryWhereExists,
-                idQueryIsObject
-            },
+            where: where,
+            include
         };
     }
     return {
         skip,
         take,
         orderBy,
-        where,
-        _helper: {
-            queryWhereExists,
-            idQueryIsObject
-        },
+        where: where
     };
 };
 exports.buildPrismaQueryParams = buildPrismaQueryParams;
