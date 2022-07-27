@@ -94,6 +94,9 @@ const mergeFiltersWithSameKey = (where, key, filter) => {
     return filter;
 };
 exports.mergeFiltersWithSameKey = mergeFiltersWithSameKey;
+/**
+ * WARN: This method is not safe for Feathers queries because unwanted queries can reach the Prisma-Client.
+ **/
 const buildIdField = (value, whitelist) => {
     if (value !== null && typeof value === 'object') {
         const filters = (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist);
