@@ -1,5 +1,4 @@
 import { NotFound } from '@feathersjs/errors';
-import { NullableId } from '@feathersjs/feathers';
 import { OPERATORS_MAP } from './constants';
 import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
@@ -101,12 +100,33 @@ export const mergeFiltersWithSameKey = (
   return filter;
 };
 
+/**
+ * WARN: This method is not safe for Feathers queries because unwanted queries can reach the Prisma-Client.
+ **/
+export const buildIdField = (value: IdField, whitelist: string[]) => {
+  if (value !== null && typeof value === 'object') {
+    const filters = castFeathersQueryToPrismaFilters(value, whitelist);
+    const filterKeys = Object.keys(OPERATORS_MAP);
+    filterKeys.forEach((key) => {
+      key in value && delete value[key];
+    });
+
+    return {
+      ...value,
+      ...filters,
+    };
+  }
+  return value;
+};
+
 export const buildWhereAndInclude = (query: QueryParam, whitelist: string[], idField: string) => {
   const where: Record<string, any> = {};
   let include: Record<string, any> = {};
   Object.keys(query).forEach((k: string | '$or' | '$and') => {
-    const value = query[k];
-    if (k === '$or' && Array.isArray(value)) {
+    const value: any = query[k];
+    if (k === idField) {
+      where[k] = mergeFiltersWithSameKey(where, k, buildIdField(value, whitelist));
+    } if (k === '$or' && Array.isArray(value)) {
       where.OR = value.map((v) => buildWhereAndInclude(v, whitelist, idField).where);
     } else if (k === '$and' && Array.isArray(value)) {
       value.forEach((v) => {
@@ -144,6 +164,10 @@ export const buildPagination = ($skip: number, $limit: number) => {
   };
 };
 
+export const hasIdObject = (where: Record<string, any>, id?: IdField) =>
+  id && !where.id && id !== null && typeof id === 'object';
+
+
 export const buildPrismaQueryParams = (
   { id, query, filters, whitelist }: {
     id?: IdField,
@@ -159,8 +183,6 @@ export const buildPrismaQueryParams = (
   const includeExists = Object.keys(include).length > 0;
   const orderBy = buildOrderBy(filters.$sort || {});
   const { skip, take } = buildPagination(filters.$skip, filters.$limit);
-  const queryWhereExists = Object.keys(where).filter((k) => k !== idField).length > 0;
-  const idQueryIsObject = typeof where.id === 'object';
 
   if (selectExists) {
     select = {
@@ -173,12 +195,8 @@ export const buildPrismaQueryParams = (
       skip,
       take,
       orderBy,
-      where,
+      where: where,
       select,
-      _helper: {
-        queryWhereExists,
-        idQueryIsObject
-      },
     };
   }
 
@@ -187,12 +205,8 @@ export const buildPrismaQueryParams = (
       skip,
       take,
       orderBy,
-      where,
-      include,
-      _helper: {
-        queryWhereExists,
-        idQueryIsObject
-      },
+      where: where,
+      include
     };
   }
 
@@ -200,11 +214,7 @@ export const buildPrismaQueryParams = (
     skip,
     take,
     orderBy,
-    where,
-    _helper: {
-      queryWhereExists,
-      idQueryIsObject
-    },
+    where: where
   };
 };
 
@@ -219,3 +229,4 @@ export const checkIdInQuery = (id: IdField | null, query: Record<string, any>, i
     throw new NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
   }
 };
+

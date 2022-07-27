@@ -1,6 +1,6 @@
 export type PrismaClient = any;
 
-export type IdField = string | number;
+export type IdField = string | number | { [key: string]: any };
 
 export type Paginate = {
   default?: number;
