@@ -43,7 +43,7 @@
   },
   "scripts": {
     "generate": "prisma generate",
-    "compile": "tsc",
+    "compile": "rm -rf dist && tsc",
     "dev": "./node_modules/nodemon/bin/nodemon.js -e ts --watch src --exec \"npm run compile\"",
     "publish": "git push origin --tags && npm run compile && git push origin",
     "release:pre": "npm run compile && npm version prerelease && npm publish --tag pre",
