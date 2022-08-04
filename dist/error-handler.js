@@ -62,6 +62,9 @@ function errorHandler(error, prismaMethod) {
                 break;
         }
     }
+    else {
+        feathersError = new errors.GeneralError(error);
+    }
     throw feathersError;
 }
 exports.errorHandler = errorHandler;

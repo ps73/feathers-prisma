@@ -1,5 +1,5 @@
 import errors = require('@feathersjs/errors');
-import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/index';
+import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/index';
 
 function getType(v: number): string {
   let type = '';

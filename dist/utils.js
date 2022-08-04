@@ -4,14 +4,14 @@ exports.buildWhereWithOptionalIdObject = exports.checkIdInQuery = exports.buildS
 const errors_1 = require("@feathersjs/errors");
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
-    const asNumber = Number(value);
-    const isNumber = !Number.isNaN(asNumber);
+    // const asNumber = Number(value);
+    const isNumber = typeof value === 'number';
     const isBoolean = value === 'true' || value === 'false';
     if (isBoolean || typeof value === 'boolean') {
         return typeof value === 'string' ? value === 'true' : value;
     }
     if (isNumber) {
-        return asNumber;
+        return value;
     }
     if (value === 'null') {
         return null;
