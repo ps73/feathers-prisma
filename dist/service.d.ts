@@ -4,13 +4,13 @@ import { PrismaClient } from '@prisma/client';
 import { IdField, PrismaServiceOptions } from './types';
 import { Models } from './types';
 declare type KeyOfModel<T, K extends keyof T> = T[K];
-export declare class PrismaService<K extends keyof Models, ModelData = Record<string, any>> extends AdapterService {
+export declare class PrismaService<K extends keyof Models, ModelData = Record<string, any>> extends AdapterService<ModelData> {
     Model: any;
     client: PrismaClient;
     constructor(options: PrismaServiceOptions, client: PrismaClient);
     find(params?: Params & {
         prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0];
-    }): Promise<any[] | import("@feathersjs/feathers").Paginated<any>>;
+    }): Promise<ModelData[] | import("@feathersjs/feathers").Paginated<ModelData>>;
     _find(params?: Params & {
         prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0];
     }): Promise<any>;
