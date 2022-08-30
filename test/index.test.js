@@ -150,7 +150,7 @@ describe('Feathers Prisma Service', () => {
     });
   });
 
-  describe.skip('Custom tests', () => {
+  describe('Custom tests', () => {
     const usersService = app.service('users');
     const todosService = app.service('todos');
 
@@ -164,11 +164,13 @@ describe('Feathers Prisma Service', () => {
             { title: 'Todo1', prio: 1 }
           ],
         }
-      }, {
-        query: {
-          $eager: ['todos'],
-        },
-      });
+      },
+        // {
+        //   query: {
+        //     $eager: ['todos'],
+        //   },
+        // }
+      );
     });
 
     afterEach(async () => {
@@ -176,7 +178,7 @@ describe('Feathers Prisma Service', () => {
       await usersService.remove(data.id);
     });
 
-    describe('relations', () => {
+    describe.skip('relations', () => {
       it('creates with related items', () => {
         expect(data.todos.length).to.equal(1);
       });
@@ -213,7 +215,7 @@ describe('Feathers Prisma Service', () => {
       });
     });
 
-    describe('custom query', () => {
+    describe.skip('custom query', () => {
       beforeEach(async () => {
         await todosService.create([
           { title: 'Lorem', prio: 1, userId: data.id },
@@ -557,6 +559,181 @@ describe('Feathers Prisma Service', () => {
         } catch (e) {
           expect(e.code).to.be.equal(404);
         }
+      });
+    });
+
+    describe('custom query with params.prisma', () => {
+      beforeEach(async () => {
+        await todosService.create([
+          { title: 'Lorem', prio: 1, userId: data.id },
+          { title: 'Lorem Ipsum', prio: 1, userId: data.id, tag1: 'TEST' },
+          { title: '[TODO]', prio: 1, userId: data.id, tag1: 'TEST2' },
+        ]);
+      });
+
+      it('.find + $contains', async () => {
+        const results = await todosService.find({
+          prisma: {
+            where: {
+              title: {
+                contains: 'lorem'
+              }
+            }
+          }
+        });
+        expect(results.length).to.equal(2);
+      });
+
+      it('.find + $startsWith', async () => {
+        const results = await todosService.find({
+          prisma: {
+            where: {
+              title: {
+                startsWith: 'lorem',
+              }
+            }
+          }
+        });
+        expect(results.length).to.equal(2);
+      });
+
+      it('.find + $endsWith', async () => {
+        const results = await todosService.find({
+          prisma: {
+            where: {
+              title: {
+                endsWith: 'o]',
+              }
+            }
+          }
+        });
+        expect(results.length).to.equal(1);
+      });
+
+      it('.find + query field "null" value', async () => {
+        const results = await todosService.find({
+          prisma: {
+            where: {
+              tag1: null
+            }
+          }
+        });
+        expect(results.length).to.equal(2);
+      });
+
+      it('.find + $rawWhere + query related items', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const result = await usersService.find({
+          prisma: {
+            where: {
+              todos: {
+                some: {
+                  prio: 2,
+                },
+              }
+            },
+            include: {
+              todos: true,
+            }
+          }
+        });
+        const result2 = await usersService.find({
+          prisma: {
+            where: {
+              todos: {
+                every: {
+                  done: true,
+                },
+              }
+            },
+          }
+        });
+        expect(result).to.have.lengthOf(1);
+        expect(result[0].todos).to.have.lengthOf(6);
+        expect(result2).to.have.lengthOf(0);
+      });
+
+      it('.find + $and', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          prisma: {
+            where: {
+              AND: [{
+                tag1: { in: ['TEST', 'TEST2'] }
+              }]
+            }
+          }
+        });
+
+        expect(result).to.have.lengthOf(2);
+      });
+
+      it('.find + $and + merge with equals', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          prisma: {
+            where: {
+              AND: [
+                { tag1: 'TEST', },
+                {
+                  tag1: { in: ['TEST', 'TEST2'] }
+                }]
+            }
+          }
+        });
+
+        expect(result).to.have.lengthOf(1);
+      });
+
+      it('.find + $and + merge with normal query', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          prisma: {
+            where: {
+              AND: [
+                { tag1: { not: 'TEST' } },
+                {
+                  tag1: { in: ['TEST', 'TEST2'] }
+                }]
+            }
+          }
+        });
+
+        expect(result).to.have.lengthOf(1);
+      });
+
+      it('.find + $and', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          prisma: {
+            where: {
+              AND: [
+                { tag1: 'TEST' },
+              ]
+            }
+          }
+        });
+
+        expect(result).to.have.lengthOf(1);
       });
     });
   });
