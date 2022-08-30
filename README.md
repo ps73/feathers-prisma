@@ -121,12 +121,6 @@ app.service("messages").find({
 Write a raw Prism query by overwriting the params.primsa. Currently this is only available for find service calls. **WARNING**: params.prisma may possibly overwrite the original feathers query.
 
 ```typescript
-declare module 'feathers-prisma' {
-  interface Models {
-    message: any
-  }
-}
-
 app.use(
   "/messages",
   service<"message">(
