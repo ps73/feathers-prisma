@@ -1,7 +1,7 @@
 {
   "name": "@triggercode/feathers-prisma",
   "description": "A Feathers service adapter for Prisma ORM.",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "homepage": "https://github.com/triggercode/feathers-prisma",
   "main": "dist/",
   "types": "dist/",
