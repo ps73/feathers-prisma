@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 export interface Models {
 }
 export declare type IdField = string | number | {
@@ -8,7 +9,7 @@ export declare type Paginate = {
     max?: number;
 };
 export interface PrismaServiceOptions {
-    model: string;
+    model: Uncapitalize<Prisma.ModelName>;
     events?: string[];
     multi?: boolean | string[];
     id?: string;

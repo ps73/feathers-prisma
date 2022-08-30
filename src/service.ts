@@ -1,7 +1,7 @@
 import type { Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import * as errors from '@feathersjs/errors';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { IdField, PrismaServiceOptions } from './types';
 import { buildPrismaQueryParams, buildSelectOrInclude, checkIdInQuery } from './utils';
 import { OPERATORS } from './constants';
@@ -10,7 +10,7 @@ import { Models } from './types';
 
 type KeyOfModel<T, K extends keyof T> = T[K];
 
-export class PrismaService<K extends keyof Models, ModelData = Record<string, any>> extends AdapterService<ModelData> {
+export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.ModelName>, ModelData = Record<string, any>> extends AdapterService<ModelData> {
   Model: any;
   client: PrismaClient;
 
