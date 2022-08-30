@@ -1,4 +1,5 @@
-export declare type PrismaClient = any;
+export interface Models {
+}
 export declare type IdField = string | number | {
     [key: string]: any;
 };

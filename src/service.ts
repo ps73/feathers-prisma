@@ -6,8 +6,11 @@ import { IdField, PrismaServiceOptions } from './types';
 import { buildPrismaQueryParams, buildSelectOrInclude, checkIdInQuery } from './utils';
 import { OPERATORS } from './constants';
 import { errorHandler } from './error-handler';
+import { Models } from './types';
 
-export class PrismaService<ModelData = Record<string, any>> extends AdapterService {
+type KeyOfModel<T, K extends keyof T> = T[K];
+
+export class PrismaService<K extends keyof Models, ModelData = Record<string, any>> extends AdapterService {
   Model: any;
   client: PrismaClient;
 
@@ -29,16 +32,19 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     if (!model) {
       throw new errors.GeneralError('You must provide a model string.');
     }
-    // @ts-ignore
-    if (!client[model]) {
+
+    if (!(model in client)) {
       throw new errors.GeneralError(`No model with name ${model} found in prisma client.`);
     }
     this.client = client;
-    // @ts-ignore
-    this.Model = client[model];
+    this.Model = (client as any)[model];
   }
 
-  async _find(params: Params = {}): Promise<any> {
+  async find(params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0] } = {}) {
+    return super.find(params);
+  }
+
+  async _find(params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0] } = {}): Promise<any> {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { skip, take, orderBy, where, select, include } = buildPrismaQueryParams({
@@ -46,12 +52,12 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
     }, this.options.id);
     try {
       const findMany = () => {
-        return this.Model.findMany({
+        return this.Model.findMany(Object.assign({
           ...(typeof take === 'number' ? { skip, take } : { skip }),
           orderBy,
           where,
           ...buildSelectOrInclude({ select, include }),
-        });
+        }, params.prisma));
       };
 
       if (!this.options.paginate.default || (typeof take !== 'number' && !take)) {
@@ -61,9 +67,9 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
 
       const [data, count] = await this.client.$transaction([
         findMany(),
-        this.Model.count({
+        this.Model.count(Object.assign({
           where,
-        }),
+        }, { where: (params?.prisma as any)?.where })),
       ]);
 
       const result = {
@@ -224,8 +230,8 @@ export class PrismaService<ModelData = Record<string, any>> extends AdapterServi
   }
 }
 
-export function service<ModelData = Record<string, any>>(options: PrismaServiceOptions, client: PrismaClient) {
-  return new PrismaService<ModelData>(options, client);
+export function service<K extends keyof Models, ModelData = Record<string, any>>(options: PrismaServiceOptions, client: PrismaClient) {
+  return new PrismaService<K, ModelData>(options, client);
 }
 
 export const prismaService = service;
