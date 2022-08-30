@@ -85,6 +85,8 @@ app.service("messages").find({
 
 ### Filter with default prisma filters
 
+**with `$rawWhere`:**
+
 Since 0.5.0 it is possible to use default prisma filters. This makes it possible to [filter JSON](https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields) fields or to [filter relations](https://www.prisma.io/docs/concepts/components/prisma-client/relation-queries#relation-filters).
 
 The `$rawWhere` property **has to be** set in the `whitelist` option parameter. Otherwise the service will throw an error.
@@ -110,6 +112,41 @@ app.service("messages").find({
         },
       },
     },
+  },
+});
+```
+
+**with `params.prisma`:**
+
+Write a raw Prism query by overwriting the params.primsa. Currently this is only available for find service calls. **WARNING**: params.prisma may possibly overwrite the original feathers query.
+
+```typescript
+declare module 'feathers-prisma' {
+  interface Models {
+    message: any
+  }
+}
+
+app.use(
+  "/messages",
+  service<"message">(
+    {
+      model: "message",
+      whitelist: ["$rawWhere"],
+    },
+    prismaClient
+  )
+);
+// will load all messages where at least one of the recipients userIds is equal 1
+app.service("messages").find({
+  prisma: {
+    where: {
+      recipients: {
+        some: {
+          userId: 1,
+        },
+      },
+    }
   },
 });
 ```
