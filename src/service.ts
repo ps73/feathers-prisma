@@ -10,7 +10,7 @@ import { Models } from './types';
 
 type KeyOfModel<T, K extends keyof T> = T[K];
 
-export class PrismaService<K extends keyof Models, ModelData = Record<string, any>> extends AdapterService {
+export class PrismaService<K extends keyof Models, ModelData = Record<string, any>> extends AdapterService<ModelData> {
   Model: any;
   client: PrismaClient;
 
@@ -44,7 +44,7 @@ export class PrismaService<K extends keyof Models, ModelData = Record<string, an
     return super.find(params);
   }
 
-  async _find(params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0] } = {}): Promise<any> {
+  async _find(params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0] } = {}) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { skip, take, orderBy, where, select, include } = buildPrismaQueryParams({
