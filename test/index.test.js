@@ -571,7 +571,7 @@ describe('Feathers Prisma Service', () => {
         ]);
       });
 
-      it('.find + $contains', async () => {
+      it('.find + prisma.where.contains', async () => {
         const results = await todosService.find({
           prisma: {
             where: {
@@ -584,7 +584,7 @@ describe('Feathers Prisma Service', () => {
         expect(results.length).to.equal(2);
       });
 
-      it('.find + $startsWith', async () => {
+      it('.find + prisma.where.startsWith', async () => {
         const results = await todosService.find({
           prisma: {
             where: {
@@ -597,7 +597,7 @@ describe('Feathers Prisma Service', () => {
         expect(results.length).to.equal(2);
       });
 
-      it('.find + $endsWith', async () => {
+      it('.find + primsa.where.endsWith', async () => {
         const results = await todosService.find({
           prisma: {
             where: {
@@ -610,7 +610,7 @@ describe('Feathers Prisma Service', () => {
         expect(results.length).to.equal(1);
       });
 
-      it('.find + query field "null" value', async () => {
+      it('.find + prisma.where field "null" value', async () => {
         const results = await todosService.find({
           prisma: {
             where: {
@@ -621,7 +621,7 @@ describe('Feathers Prisma Service', () => {
         expect(results.length).to.equal(2);
       });
 
-      it('.find + $rawWhere + query related items', async () => {
+      it('.find + prisma.where + prisma.include', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
@@ -651,12 +651,13 @@ describe('Feathers Prisma Service', () => {
             },
           }
         });
+
         expect(result).to.have.lengthOf(1);
         expect(result[0].todos).to.have.lengthOf(6);
         expect(result2).to.have.lengthOf(0);
       });
 
-      it('.find + $and', async () => {
+      it('.find + prisma.where.AND', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
@@ -675,7 +676,7 @@ describe('Feathers Prisma Service', () => {
         expect(result).to.have.lengthOf(2);
       });
 
-      it('.find + $and + merge with equals', async () => {
+      it('.find + prisma.where.AND + merge with equals', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
@@ -696,7 +697,7 @@ describe('Feathers Prisma Service', () => {
         expect(result).to.have.lengthOf(1);
       });
 
-      it('.find + $and + merge with normal query', async () => {
+      it('.find + complex prisma.where.AND', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
@@ -717,7 +718,7 @@ describe('Feathers Prisma Service', () => {
         expect(result).to.have.lengthOf(1);
       });
 
-      it('.find + $and', async () => {
+      it('.find + prisma.where.AND + single AND', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
