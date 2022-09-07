@@ -735,6 +735,26 @@ describe('Feathers Prisma Service', () => {
 
         expect(result).to.have.lengthOf(1);
       });
+
+      it('.find + prisma.where + merge with feathers query', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+
+        const result = await todosService.find({
+          query: {
+            tag1: { in: ['TEST', 'TEST2'] }
+          },
+          prisma: {
+            where: {
+              tag1: { not: 'TEST' }
+            }
+          }
+        });
+
+        expect(result).to.have.lengthOf(1);
+      });
     });
   });
 

@@ -1,4 +1,4 @@
-import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
+import { EagerQuery, FeathersQueryData, IdField, QueryParam, QueryParamRecordFilters } from './types';
 export declare const castToNumberBooleanStringOrNull: (value: string | boolean | number) => string | number | boolean | null;
 export declare const castFeathersQueryToPrismaFilters: (p: QueryParamRecordFilters, whitelist: string[]) => Record<string, any>;
 export declare const castEagerQueryToPrismaInclude: (value: EagerQuery, whitelist: string[], idField: string) => EagerQuery;
@@ -22,12 +22,35 @@ export declare const buildPagination: ($skip: number, $limit: number) => {
     take: number;
 };
 export declare const hasIdObject: (where: Record<string, any>, id?: IdField | undefined) => boolean | "" | 0 | undefined;
-export declare const buildPrismaQueryParams: ({ id, query, filters, whitelist }: {
-    id?: IdField | undefined;
-    query: Record<string, any>;
-    filters: Record<string, any>;
-    whitelist: string[];
-}, idField: string) => {
+export declare const buildBasePrismaQueryParams: ({ id, query, filters, whitelist }: FeathersQueryData, idField: string) => {
+    skip: number;
+    take: number;
+    orderBy: {
+        [x: string]: string;
+    }[];
+    where: Record<string, any>;
+    select: Record<string, boolean>;
+    include?: undefined;
+} | {
+    skip: number;
+    take: number;
+    orderBy: {
+        [x: string]: string;
+    }[];
+    where: Record<string, any>;
+    include: Record<string, any>;
+    select?: undefined;
+} | {
+    skip: number;
+    take: number;
+    orderBy: {
+        [x: string]: string;
+    }[];
+    where: Record<string, any>;
+    select?: undefined;
+    include?: undefined;
+};
+export declare const buildPrismaQueryParams: (feathersQueryData: FeathersQueryData, idField: string, prismaQueryOverwrite?: Record<string, any> | undefined) => {
     skip: number;
     take: number;
     orderBy: {

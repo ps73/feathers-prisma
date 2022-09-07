@@ -1,6 +1,6 @@
 import { NotFound } from '@feathersjs/errors';
 import { OPERATORS_MAP } from './constants';
-import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
+import { EagerQuery, FeathersQueryData, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
 export const castToNumberBooleanStringOrNull = (value: string | boolean | number) => {
   const asNumber = Number(value);
@@ -167,16 +167,11 @@ export const buildPagination = ($skip: number, $limit: number) => {
 export const hasIdObject = (where: Record<string, any>, id?: IdField) =>
   id && !where.id && id !== null && typeof id === 'object';
 
-
-export const buildPrismaQueryParams = (
-  { id, query, filters, whitelist }: {
-    id?: IdField,
-    query: Record<string, any>,
-    filters: Record<string, any>,
-    whitelist: string[],
-  },
+export const buildBasePrismaQueryParams = (
+  { id, query, filters, whitelist }: FeathersQueryData,
   idField: string,
 ) => {
+
   let select = buildSelect(filters.$select || []);
   const selectExists = Object.keys(select).length > 0;
   const { where, include } = buildWhereAndInclude(id ? { [idField]: id, ...query } : query, whitelist, idField);
@@ -216,6 +211,25 @@ export const buildPrismaQueryParams = (
     orderBy,
     where: where
   };
+};
+
+
+export const buildPrismaQueryParams = (feathersQueryData: FeathersQueryData, idField: string, prismaQueryOverwrite?: Record<string, any>) => {
+
+  const basePrismaQuery = buildBasePrismaQueryParams(feathersQueryData, idField);
+
+  if (prismaQueryOverwrite) {
+    const whereOverwrite = prismaQueryOverwrite.where;
+    delete prismaQueryOverwrite.where;
+
+    const baseWhere = basePrismaQuery.where;
+
+    return Object.assign(basePrismaQuery, prismaQueryOverwrite, {
+      where: whereOverwrite ? { AND: [whereOverwrite, baseWhere] } : baseWhere
+    });
+  }
+
+  return basePrismaQuery;
 };
 
 export const buildSelectOrInclude = (

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const errors_1 = require("@feathersjs/errors");
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
@@ -161,7 +161,7 @@ const buildPagination = ($skip, $limit) => {
 exports.buildPagination = buildPagination;
 const hasIdObject = (where, id) => id && !where.id && id !== null && typeof id === 'object';
 exports.hasIdObject = hasIdObject;
-const buildPrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
+const buildBasePrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
     let select = (0, exports.buildSelect)(filters.$select || []);
     const selectExists = Object.keys(select).length > 0;
     const { where, include } = (0, exports.buildWhereAndInclude)(id ? Object.assign({ [idField]: id }, query) : query, whitelist, idField);
@@ -193,6 +193,19 @@ const buildPrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
         orderBy,
         where: where
     };
+};
+exports.buildBasePrismaQueryParams = buildBasePrismaQueryParams;
+const buildPrismaQueryParams = (feathersQueryData, idField, prismaQueryOverwrite) => {
+    const basePrismaQuery = (0, exports.buildBasePrismaQueryParams)(feathersQueryData, idField);
+    if (prismaQueryOverwrite) {
+        const whereOverwrite = prismaQueryOverwrite.where;
+        delete prismaQueryOverwrite.where;
+        const baseWhere = basePrismaQuery.where;
+        return Object.assign(basePrismaQuery, prismaQueryOverwrite, {
+            where: whereOverwrite ? { AND: [whereOverwrite, baseWhere] } : baseWhere
+        });
+    }
+    return basePrismaQuery;
 };
 exports.buildPrismaQueryParams = buildPrismaQueryParams;
 const buildSelectOrInclude = ({ select, include }) => {

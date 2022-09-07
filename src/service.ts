@@ -49,15 +49,16 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     const { whitelist } = this.options;
     const { skip, take, orderBy, where, select, include } = buildPrismaQueryParams({
       query, filters, whitelist,
-    }, this.options.id);
+    }, this.options.id, params.prisma);
+
     try {
       const findMany = () => {
-        return this.Model.findMany(Object.assign({
+        return this.Model.findMany({
           ...(typeof take === 'number' ? { skip, take } : { skip }),
           orderBy,
           where,
           ...buildSelectOrInclude({ select, include }),
-        }, params.prisma));
+        });
       };
 
       if (!this.options.paginate.default || (typeof take !== 'number' && !take)) {
@@ -67,9 +68,7 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
 
       const [data, count] = await this.client.$transaction([
         findMany(),
-        this.Model.count(Object.assign({
-          where,
-        }, { where: (params?.prisma as any)?.where })),
+        this.Model.count(where),
       ]);
 
       const result = {
