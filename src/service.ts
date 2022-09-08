@@ -95,7 +95,7 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
         id, query, filters, whitelist
       }, this.options.id, params.prisma);
 
-      const result: Partial<ModelData> = await this.Model.findUnique({
+      const result: Partial<ModelData> = await this.Model.findFirst({
         where,
         ...buildSelectOrInclude({ select, include }),
       });
