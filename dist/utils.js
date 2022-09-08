@@ -98,8 +98,7 @@ exports.mergeFiltersWithSameKey = mergeFiltersWithSameKey;
 const buildIdField = (value, whitelist) => {
     if (value !== null && typeof value === 'object') {
         const filters = (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist);
-        const filterKeys = Object.keys(constants_1.OPERATORS_MAP);
-        filterKeys.forEach((key) => {
+        Object.keys(constants_1.OPERATORS_MAP).forEach((key) => {
             key in value && delete value[key];
         });
         return Object.assign(Object.assign({}, value), filters);

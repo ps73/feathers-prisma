@@ -21,10 +21,10 @@ export declare const buildPagination: ($skip: number, $limit: number) => {
     skip: number;
     take: number;
 };
-export declare const hasIdObject: (where: Record<string, any>, id?: IdField | undefined) => boolean | "" | 0 | undefined;
+export declare const hasIdObject: (where: Record<string, any>, id?: IdField) => boolean | "" | 0 | undefined;
 export declare const buildWhereWithId: (id: IdField | undefined, where: Record<string, any>, idField: string) => Record<string, any>;
 export declare const buildBasePrismaQueryParams: ({ id, query, filters, whitelist }: FeathersQueryData, idField: string) => any;
-export declare const buildPrismaQueryParams: (feathersQueryData: FeathersQueryData, idField: string, prismaQueryOverwrite?: Record<string, any> | undefined) => any;
+export declare const buildPrismaQueryParams: (feathersQueryData: FeathersQueryData, idField: string, prismaQueryOverwrite?: Record<string, any>) => any;
 export declare const buildSelectOrInclude: ({ select, include }: {
     select?: Record<string, boolean> | undefined;
     include?: Record<string, any> | undefined;

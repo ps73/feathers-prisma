@@ -105,8 +105,7 @@ export const mergeFiltersWithSameKey = (
 export const buildIdField = (value: IdField, whitelist: string[]) => {
   if (value !== null && typeof value === 'object') {
     const filters = castFeathersQueryToPrismaFilters(value, whitelist);
-    const filterKeys = Object.keys(OPERATORS_MAP);
-    filterKeys.forEach((key) => {
+    Object.keys(OPERATORS_MAP).forEach((key) => {
       key in value && delete value[key];
     });
 
