@@ -1,9 +1,9 @@
-import type { Params } from '@feathersjs/feathers';
+import type { Id, Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import * as errors from '@feathersjs/errors';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { IdField, PrismaServiceOptions } from './types';
-import { buildPrismaQueryParams, buildSelectOrInclude, checkIdInQuery } from './utils';
+import { buildPrismaQueryParams, buildSelectOrInclude } from './utils';
 import { OPERATORS } from './constants';
 import { errorHandler } from './error-handler';
 import { Models } from './types';
@@ -83,15 +83,18 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     }
   }
 
-  async _get(id: IdField, params: Params = {}) {
+  async get(id: Id, params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0] } = {}) {
+    return super.get(id, params);
+  }
+
+  async _get(id: IdField, params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0] } = {}) {
     try {
       const { query, filters } = this.filterQuery(params);
       const { whitelist } = this.options;
       const { where, select, include } = buildPrismaQueryParams({
         id, query, filters, whitelist
-      }, this.options.id);
+      }, this.options.id, params.prisma);
 
-      checkIdInQuery(id, query, this.options.id);
       const result: Partial<ModelData> = await this.Model.findUnique({
         where,
         ...buildSelectOrInclude({ select, include }),
@@ -142,7 +145,6 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     if (id === null) {
       return await this._patchOrUpdateMany(data, where, select, include);
     } else {
-      checkIdInQuery(id, query, this.options.id);
       return await this._patchOrUpdateSingle(data, where, select, include, shouldReturnResult);
     }
 
@@ -196,7 +198,6 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     if (id === null) {
       return this._removeMany(where, select, include);
     } else {
-      checkIdInQuery(id, query, this.options.id);
       return this._removeSingle(where, select, include);
     }
   }

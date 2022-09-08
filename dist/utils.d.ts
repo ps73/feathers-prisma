@@ -22,62 +22,8 @@ export declare const buildPagination: ($skip: number, $limit: number) => {
     take: number;
 };
 export declare const hasIdObject: (where: Record<string, any>, id?: IdField | undefined) => boolean | "" | 0 | undefined;
-export declare const buildBasePrismaQueryParams: ({ id, query, filters, whitelist }: FeathersQueryData, idField: string) => {
-    skip: number;
-    take: number;
-    orderBy: {
-        [x: string]: string;
-    }[];
-    where: Record<string, any>;
-    select: Record<string, boolean>;
-    include?: undefined;
-} | {
-    skip: number;
-    take: number;
-    orderBy: {
-        [x: string]: string;
-    }[];
-    where: Record<string, any>;
-    include: Record<string, any>;
-    select?: undefined;
-} | {
-    skip: number;
-    take: number;
-    orderBy: {
-        [x: string]: string;
-    }[];
-    where: Record<string, any>;
-    select?: undefined;
-    include?: undefined;
-};
-export declare const buildPrismaQueryParams: (feathersQueryData: FeathersQueryData, idField: string, prismaQueryOverwrite?: Record<string, any> | undefined) => {
-    skip: number;
-    take: number;
-    orderBy: {
-        [x: string]: string;
-    }[];
-    where: Record<string, any>;
-    select: Record<string, boolean>;
-    include?: undefined;
-} | {
-    skip: number;
-    take: number;
-    orderBy: {
-        [x: string]: string;
-    }[];
-    where: Record<string, any>;
-    include: Record<string, any>;
-    select?: undefined;
-} | {
-    skip: number;
-    take: number;
-    orderBy: {
-        [x: string]: string;
-    }[];
-    where: Record<string, any>;
-    select?: undefined;
-    include?: undefined;
-};
+export declare const buildBasePrismaQueryParams: ({ id, query, filters, whitelist }: FeathersQueryData, idField: string) => any;
+export declare const buildPrismaQueryParams: (feathersQueryData: FeathersQueryData, idField: string, prismaQueryOverwrite?: Record<string, any> | undefined) => any;
 export declare const buildSelectOrInclude: ({ select, include }: {
     select?: Record<string, boolean> | undefined;
     include?: Record<string, any> | undefined;
@@ -91,4 +37,3 @@ export declare const buildSelectOrInclude: ({ select, include }: {
     select?: undefined;
     include?: undefined;
 };
-export declare const checkIdInQuery: (id: IdField | null, query: Record<string, any>, idField: string) => void;

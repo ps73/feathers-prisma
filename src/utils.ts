@@ -172,45 +172,29 @@ export const buildBasePrismaQueryParams = (
   idField: string,
 ) => {
 
-  let select = buildSelect(filters.$select || []);
-  const selectExists = Object.keys(select).length > 0;
-  const { where, include } = buildWhereAndInclude(id ? { [idField]: id, ...query } : query, whitelist, idField);
-  const includeExists = Object.keys(include).length > 0;
+  const select = buildSelect(filters.$select || []);
+  const { where, include } = buildWhereAndInclude(query, whitelist, idField);
   const orderBy = buildOrderBy(filters.$sort || {});
   const { skip, take } = buildPagination(filters.$skip, filters.$limit);
 
-  if (selectExists) {
-    select = {
+  const resultQuery: any = {
+    skip,
+    take,
+    orderBy,
+    where: id ? { AND: [{ [idField]: id }, where] } : where
+  };
+
+  if (Object.keys(select).length > 0) {
+    resultQuery.select = {
       [idField]: true,
       ...select,
       ...include,
     };
-
-    return {
-      skip,
-      take,
-      orderBy,
-      where: where,
-      select,
-    };
+  } else if (Object.keys(include).length > 0) {
+    resultQuery.include = include;
   }
 
-  if (!selectExists && includeExists) {
-    return {
-      skip,
-      take,
-      orderBy,
-      where: where,
-      include
-    };
-  }
-
-  return {
-    skip,
-    take,
-    orderBy,
-    where: where
-  };
+  return resultQuery;
 };
 
 
@@ -237,10 +221,3 @@ export const buildSelectOrInclude = (
 ) => {
   return select ? { select } : include ? { include } : {};
 };
-
-export const checkIdInQuery = (id: IdField | null, query: Record<string, any>, idField: string) => {
-  if (id && query[idField] && id !== query[idField]) {
-    throw new NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
-  }
-};
-

@@ -1,4 +1,4 @@
-import type { Params } from '@feathersjs/feathers';
+import type { Id, Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { IdField, PrismaServiceOptions } from './types';
@@ -14,7 +14,12 @@ export declare class PrismaService<K extends keyof PrismaClient & Uncapitalize<P
     _find(params?: Params & {
         prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0];
     }): Promise<any>;
-    _get(id: IdField, params?: Params): Promise<Partial<ModelData> | undefined>;
+    get(id: Id, params?: Params & {
+        prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0];
+    }): Promise<ModelData>;
+    _get(id: IdField, params?: Params & {
+        prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0];
+    }): Promise<Partial<ModelData> | undefined>;
     _create(data: Partial<ModelData> | Partial<ModelData>[], params?: Params): Promise<Partial<ModelData> | Partial<ModelData>[] | undefined>;
     _update(id: IdField | null, data: Partial<ModelData>, params?: Params): Promise<any>;
     _patch(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params?: Params): Promise<any>;

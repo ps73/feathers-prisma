@@ -81,6 +81,14 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
+    get(id, params = {}) {
+        const _super = Object.create(null, {
+            get: { get: () => super.get }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            return _super.get.call(this, id, params);
+        });
+    }
     _get(id, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -88,8 +96,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 const { whitelist } = this.options;
                 const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
                     id, query, filters, whitelist
-                }, this.options.id);
-                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
+                }, this.options.id, params.prisma);
                 const result = yield this.Model.findUnique(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
                 if (!result)
                     throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
@@ -137,7 +144,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 return yield this._patchOrUpdateMany(data, where, select, include);
             }
             else {
-                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
                 return yield this._patchOrUpdateSingle(data, where, select, include, shouldReturnResult);
             }
         });
@@ -183,7 +189,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 return this._removeMany(where, select, include);
             }
             else {
-                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
                 return this._removeSingle(where, select, include);
             }
         });

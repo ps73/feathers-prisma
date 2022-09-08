@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkIdInQuery = exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
-const errors_1 = require("@feathersjs/errors");
+exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
     const asNumber = Number(value);
@@ -162,37 +161,23 @@ exports.buildPagination = buildPagination;
 const hasIdObject = (where, id) => id && !where.id && id !== null && typeof id === 'object';
 exports.hasIdObject = hasIdObject;
 const buildBasePrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
-    let select = (0, exports.buildSelect)(filters.$select || []);
-    const selectExists = Object.keys(select).length > 0;
-    const { where, include } = (0, exports.buildWhereAndInclude)(id ? Object.assign({ [idField]: id }, query) : query, whitelist, idField);
-    const includeExists = Object.keys(include).length > 0;
+    const select = (0, exports.buildSelect)(filters.$select || []);
+    const { where, include } = (0, exports.buildWhereAndInclude)(query, whitelist, idField);
     const orderBy = (0, exports.buildOrderBy)(filters.$sort || {});
     const { skip, take } = (0, exports.buildPagination)(filters.$skip, filters.$limit);
-    if (selectExists) {
-        select = Object.assign(Object.assign({ [idField]: true }, select), include);
-        return {
-            skip,
-            take,
-            orderBy,
-            where: where,
-            select,
-        };
-    }
-    if (!selectExists && includeExists) {
-        return {
-            skip,
-            take,
-            orderBy,
-            where: where,
-            include
-        };
-    }
-    return {
+    const resultQuery = {
         skip,
         take,
         orderBy,
-        where: where
+        where: id ? { AND: [{ [idField]: id }, where] } : where
     };
+    if (Object.keys(select).length > 0) {
+        resultQuery.select = Object.assign(Object.assign({ [idField]: true }, select), include);
+    }
+    else if (Object.keys(include).length > 0) {
+        resultQuery.include = include;
+    }
+    return resultQuery;
 };
 exports.buildBasePrismaQueryParams = buildBasePrismaQueryParams;
 const buildPrismaQueryParams = (feathersQueryData, idField, prismaQueryOverwrite) => {
@@ -212,9 +197,3 @@ const buildSelectOrInclude = ({ select, include }) => {
     return select ? { select } : include ? { include } : {};
 };
 exports.buildSelectOrInclude = buildSelectOrInclude;
-const checkIdInQuery = (id, query, idField) => {
-    if (id && query[idField] && id !== query[idField]) {
-        throw new errors_1.NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
-    }
-};
-exports.checkIdInQuery = checkIdInQuery;
