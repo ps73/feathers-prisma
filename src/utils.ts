@@ -166,6 +166,16 @@ export const buildPagination = ($skip: number, $limit: number) => {
 export const hasIdObject = (where: Record<string, any>, id?: IdField) =>
   id && !where.id && id !== null && typeof id === 'object';
 
+export const buildWhereWithId = (id: IdField | undefined, where: Record<string, any>, idField: string) => {
+  if (!id) {
+    return where;
+  } else if (Object.keys(where).length > 0) {
+    return { AND: [{ [idField]: id }, where] };
+  } else {
+    return { [idField]: id };
+  }
+};
+
 export const buildBasePrismaQueryParams = (
   { id, query, filters, whitelist }: FeathersQueryData,
   idField: string,
@@ -180,7 +190,7 @@ export const buildBasePrismaQueryParams = (
     skip,
     take,
     orderBy,
-    where: id ? { AND: [{ [idField]: id }, where] } : where
+    where: buildWhereWithId(id, where, idField)
   };
 
   if (Object.keys(select).length > 0) {
