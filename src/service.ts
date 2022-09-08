@@ -145,45 +145,60 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     if (id === null) {
       return await this._patchOrUpdateMany(data, where, select, include);
     } else {
-      return await this._patchOrUpdateSingle(data, where, select, include, shouldReturnResult);
+      return await this._patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult);
     }
-
   }
 
   async _patchOrUpdateMany(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any) {
     try {
-      const [, result] = await this.client.$transaction([
+      // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
+      const [result] = await this.client.$transaction([
+        this.Model.findMany({
+          where,
+          select: { [this.options.id]: true }
+        }),
         this.Model.updateMany({
           data,
           where,
-          ...buildSelectOrInclude({ select, include }),
-        }),
-        this.Model.findMany({
-          where: {
-            ...where,
-            ...data,
-          },
-          ...buildSelectOrInclude({ select, include }),
         }),
       ]);
-      return result;
+
+      return this.Model.findMany({
+        where: {
+          [this.options.id]: {
+            in: result.map((item: any) => item[this.options.id])
+          }
+        },
+        ...buildSelectOrInclude({ select, include })
+      });
     } catch (e) {
       errorHandler(e, 'updateMany');
     }
   }
 
-  async _patchOrUpdateSingle(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean) {
+  async _patchOrUpdateSingle(id: IdField, data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean) {
     try {
-      const result = await this.Model.update({
-        data,
-        where,
-        ...buildSelectOrInclude({ select, include }),
-      });
+      const [{ count }, result] = await this.client.$transaction([
+        this.Model.updateMany({
+          data,
+          where,
+        }),
+        this.Model.findFirst({
+          where: { [this.options.id]: id },
+          ...buildSelectOrInclude({ select, include }),
+        }),
+      ]);
+
+      if (count === 0) {
+        throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+      } else if (count > 1) {
+        throw new Error('[_patchOrUpdateSingle]: Multi records updated. Expected single update.');
+      }
 
       if (select || shouldReturnResult) {
         return result;
       }
-      return { [this.options.id]: result.id, ...data };
+      return { [this.options.id]: id, ...data };
     } catch (e) {
       errorHandler(e, 'update');
     }

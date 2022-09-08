@@ -25,9 +25,9 @@ export declare class PrismaService<K extends keyof PrismaClient & Uncapitalize<P
     _patch(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params?: Params): Promise<any>;
     _patchOrUpdate(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params?: Params, shouldReturnResult?: boolean): Promise<any>;
     _patchOrUpdateMany(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any): Promise<any>;
-    _patchOrUpdateSingle(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean): Promise<any>;
+    _patchOrUpdateSingle(id: IdField, data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean): Promise<any>;
     _remove(id: IdField | null, params?: Params): Promise<any>;
-    _removeSingle(where: any, select: any, include: any): Promise<any>;
+    _removeSingle(id: IdField, where: any, select: any, include: any): Promise<any>;
     _removeMany(where: any, select: any, include: any): Promise<any>;
 }
 export declare function service<K extends keyof Models, ModelData = Record<string, any>>(options: PrismaServiceOptions, client: PrismaClient): PrismaService<K, ModelData>;

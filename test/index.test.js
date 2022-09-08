@@ -208,14 +208,14 @@ describe('Feathers Prisma Service', () => {
               $eager: [true],
             },
           });
-          console.error('never goes here');
+          throw new Error('Should never get here');
         } catch (e) {
           expect(e.code).to.be.equal('FP1001');
         }
       });
     });
 
-    describe.skip('custom query', () => {
+    describe('custom query', () => {
       beforeEach(async () => {
         await todosService.create([
           { title: 'Lorem', prio: 1, userId: data.id },
@@ -378,6 +378,7 @@ describe('Feathers Prisma Service', () => {
               }
             },
           });
+          throw new Error('Should never get here');
         } catch (e) {
           expect(e.code).to.be.equal(404);
         }
@@ -443,6 +444,7 @@ describe('Feathers Prisma Service', () => {
               $and: [{ id: results[1].id }],
             },
           });
+          throw new Error('Should never get here');
         } catch (e) {
           expect(e.code).to.be.equal(404);
         }
@@ -462,6 +464,7 @@ describe('Feathers Prisma Service', () => {
               $and: [{ id: { $in: inIds } }],
             },
           });
+          throw new Error('Should never get here');
         } catch (e) {
           expect(e.code).to.be.equal(404);
         }
@@ -499,6 +502,7 @@ describe('Feathers Prisma Service', () => {
               $and: [{ id: { $in: inIds } }],
             },
           });
+          throw new Error('Should never get here');
         } catch (e) {
           expect(e.code).to.be.equal(404);
         }
@@ -556,6 +560,7 @@ describe('Feathers Prisma Service', () => {
               $and: [{ id: { $in: inIds } }],
             },
           });
+          throw new Error('Should never get here');
         } catch (e) {
           expect(e.code).to.be.equal(404);
         }
@@ -755,6 +760,104 @@ describe('Feathers Prisma Service', () => {
         });
 
         expect(result).to.have.lengthOf(1);
+      });
+
+      it('.get + multiple id queries with prisma.where + NotFound', async () => {
+        let hasError = false;
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+          const inIds = [results[1].id, results[2].id];
+
+          await todosService.get(results[0].id, {
+            prisma: {
+              where: {
+                id: {
+                  in: inIds,
+                }
+              }
+            },
+          });
+        } catch (e) {
+          hasError = true;
+          expect(e.code).to.be.equal(404);
+        }
+        expect(hasError).to.be.true;
+      });
+
+      it('.get + multiple id queries with prisma.where + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.get(results[0].id, {
+          prisma: {
+            where: {
+              id: {
+                in: inIds,
+              }
+            }
+          },
+        });
+        expect(result.id).to.be.equal(results[0].id);
+      });
+
+      it('.get + additional queries with prisma.where + result', async () => {
+        const created = await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id, tag1: 'TEST3' },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id, tag1: 'TEST' },
+        ]);
+
+        const result = await todosService.get(created[0].id, {
+          prisma: {
+            where: {
+              tag1: { notIn: ['TEST', 'TEST2'] }
+            },
+          }
+        });
+        expect(result.id).to.be.equal(created[0].id);
+      });
+
+      it('.get + id equals query with same id with prisma.where + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+
+        const result = await todosService.get(results[0].id, {
+          prisma: {
+            where: { id: results[0].id },
+          },
+        });
+        expect(result.id).to.be.equal(results[0].id);
+      });
+
+      it('.get + id equals query with other id with prisma.where + NotFound', async () => {
+        let hasError = false;
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+
+          await todosService.get(results[0].id, {
+            prisma: {
+              where: { id: results[1].id },
+            },
+          });
+        } catch (e) {
+          hasError = true;
+          expect(e.code).to.be.equal(404);
+        }
+        expect(hasError).to.be.true;
       });
     });
   });

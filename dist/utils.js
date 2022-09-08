@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.buildWhereWithId = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
     const isNumber = typeof value === 'number';
@@ -159,6 +159,18 @@ const buildPagination = ($skip, $limit) => {
 exports.buildPagination = buildPagination;
 const hasIdObject = (where, id) => id && !where.id && id !== null && typeof id === 'object';
 exports.hasIdObject = hasIdObject;
+const buildWhereWithId = (id, where, idField) => {
+    if (!id) {
+        return where;
+    }
+    else if (Object.keys(where).length > 0) {
+        return { AND: [{ [idField]: id }, where] };
+    }
+    else {
+        return { [idField]: id };
+    }
+};
+exports.buildWhereWithId = buildWhereWithId;
 const buildBasePrismaQueryParams = ({ id, query, filters, whitelist }, idField) => {
     const select = (0, exports.buildSelect)(filters.$select || []);
     const { where, include } = (0, exports.buildWhereAndInclude)(query, whitelist, idField);
@@ -168,7 +180,7 @@ const buildBasePrismaQueryParams = ({ id, query, filters, whitelist }, idField) 
         skip,
         take,
         orderBy,
-        where: id ? { AND: [{ [idField]: id }, where] } : where
+        where: (0, exports.buildWhereWithId)(id, where, idField)
     };
     if (Object.keys(select).length > 0) {
         resultQuery.select = Object.assign(Object.assign({ [idField]: true }, select), include);
