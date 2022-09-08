@@ -3,14 +3,13 @@ import { OPERATORS_MAP } from './constants';
 import { EagerQuery, FeathersQueryData, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
 export const castToNumberBooleanStringOrNull = (value: string | boolean | number) => {
-  const asNumber = Number(value);
-  const isNumber = !Number.isNaN(asNumber);
+  const isNumber = typeof value === 'number';
   const isBoolean = value === 'true' || value === 'false';
   if (isBoolean || typeof value === 'boolean') {
     return typeof value === 'string' ? value === 'true' : value;
   }
   if (isNumber) {
-    return asNumber;
+    return value;
   }
   if (value === 'null') {
     return null;

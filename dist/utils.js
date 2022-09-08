@@ -3,14 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
-    const asNumber = Number(value);
-    const isNumber = !Number.isNaN(asNumber);
+    const isNumber = typeof value === 'number';
     const isBoolean = value === 'true' || value === 'false';
     if (isBoolean || typeof value === 'boolean') {
         return typeof value === 'string' ? value === 'true' : value;
     }
     if (isNumber) {
-        return asNumber;
+        return value;
     }
     if (value === 'null') {
         return null;

@@ -61,6 +61,8 @@ export function errorHandler(error: any, prismaMethod?: string) {
         feathersError = new errors.GeneralError(error);
         break;
     }
+  } else {
+    feathersError = new errors.GeneralError(error);
   }
 
   throw feathersError;
