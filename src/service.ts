@@ -198,16 +198,25 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     if (id === null) {
       return this._removeMany(where, select, include);
     } else {
-      return this._removeSingle(where, select, include);
+      return this._removeSingle(id, where, select, include);
     }
   }
 
-  async _removeSingle(where: any, select: any, include: any) {
+  async _removeSingle(id: IdField, where: any, select: any, include: any) {
     try {
-      return await this.Model.delete({
-        where: where,
-        ...buildSelectOrInclude({ select, include }),
-      });
+      const [data] = await this.client.$transaction([
+        this.Model.findFirst({
+          where: where,
+          ...buildSelectOrInclude({ select, include }),
+        }),
+        this.Model.deleteMany({ where }),
+      ]);
+
+      if (!data) {
+        throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+      }
+
+      return data;
     } catch (e) {
       errorHandler(e, 'delete');
     }
@@ -215,13 +224,12 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
 
   async _removeMany(where: any, select: any, include: any) {
     try {
-      const query = {
-        where: where,
-        ...buildSelectOrInclude({ select, include }),
-      };
       const [data] = await this.client.$transaction([
-        this.Model.findMany(query),
-        this.Model.deleteMany(query),
+        this.Model.findMany({
+          where: where,
+          ...buildSelectOrInclude({ select, include }),
+        }),
+        this.Model.deleteMany({ where }),
       ]);
       return data;
     } catch (e) {
