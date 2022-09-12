@@ -113,10 +113,13 @@ const buildWhereAndInclude = (query, whitelist, idField) => {
     let include = {};
     Object.keys(query).forEach((k) => {
         const value = query[k];
-        if (k === idField) {
+        if (value === null) {
+            where[k] = null;
+        }
+        else if (k === idField) {
             where[k] = (0, exports.mergeFiltersWithSameKey)(where, k, (0, exports.buildIdField)(value, whitelist));
         }
-        if (k === '$or' && Array.isArray(value)) {
+        else if (k === '$or' && Array.isArray(value)) {
             where.OR = value.map((v) => (0, exports.buildWhereAndInclude)(v, whitelist, idField).where);
         }
         else if (k === '$and' && Array.isArray(value)) {

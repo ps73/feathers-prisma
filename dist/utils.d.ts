@@ -21,7 +21,7 @@ export declare const buildPagination: ($skip: number, $limit: number) => {
     skip: number;
     take: number;
 };
-export declare const hasIdObject: (where: Record<string, any>, id?: IdField | undefined) => boolean | "" | 0 | undefined;
+export declare const hasIdObject: (where: Record<string, any>, id?: IdField) => boolean | "" | 0 | undefined;
 export declare const buildPrismaQueryParams: ({ id, query, filters, whitelist }: {
     id?: IdField | undefined;
     query: Record<string, any>;
