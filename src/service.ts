@@ -69,7 +69,7 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
 
       const [data, count] = await this.client.$transaction([
         findMany(),
-        this.Model.count(where),
+        this.Model.count({ where }),
       ]);
 
       const result = {
