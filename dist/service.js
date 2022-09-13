@@ -28,6 +28,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
             filters: options.filters || [],
             events: options.events || [],
             whitelist: Object.values(constants_1.OPERATORS).concat(options.whitelist || []),
+            // @ts-ignore
             model: options.model || ''
         });
         const { model } = options;
@@ -66,7 +67,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 }
                 const [data, count] = yield this.client.$transaction([
                     findMany(),
-                    this.Model.count(where),
+                    this.Model.count({ where }),
                 ]);
                 const result = {
                     total: count,
