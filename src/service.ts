@@ -1,9 +1,9 @@
-import type { Params } from '@feathersjs/feathers';
+import type { Id, Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import * as errors from '@feathersjs/errors';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { IdField, PrismaServiceOptions } from './types';
-import { buildPrismaQueryParams, buildSelectOrInclude, checkIdInQuery } from './utils';
+import { buildPrismaQueryParams, buildSelectOrInclude } from './utils';
 import { OPERATORS } from './constants';
 import { errorHandler } from './error-handler';
 import { Models } from './types';
@@ -25,6 +25,7 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
       filters: options.filters || [],
       events: options.events || [],
       whitelist: Object.values(OPERATORS).concat(options.whitelist || []),
+      // @ts-ignore
       model: options.model || ''
     });
 
@@ -49,15 +50,16 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     const { whitelist } = this.options;
     const { skip, take, orderBy, where, select, include } = buildPrismaQueryParams({
       query, filters, whitelist,
-    }, this.options.id);
+    }, this.options.id, params.prisma);
+
     try {
       const findMany = () => {
-        return this.Model.findMany(Object.assign({
+        return this.Model.findMany({
           ...(typeof take === 'number' ? { skip, take } : { skip }),
           orderBy,
           where,
           ...buildSelectOrInclude({ select, include }),
-        }, params.prisma));
+        });
       };
 
       if (!this.options.paginate.default || (typeof take !== 'number' && !take)) {
@@ -67,9 +69,7 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
 
       const [data, count] = await this.client.$transaction([
         findMany(),
-        this.Model.count(Object.assign({
-          where,
-        }, { where: (params?.prisma as any)?.where })),
+        this.Model.count(where),
       ]);
 
       const result = {
@@ -84,16 +84,19 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     }
   }
 
-  async _get(id: IdField, params: Params = {}) {
+  async get(id: Id, params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0] } = {}) {
+    return super.get(id, params);
+  }
+
+  async _get(id: IdField, params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0] } = {}) {
     try {
       const { query, filters } = this.filterQuery(params);
       const { whitelist } = this.options;
       const { where, select, include } = buildPrismaQueryParams({
         id, query, filters, whitelist
-      }, this.options.id);
+      }, this.options.id, params.prisma);
 
-      checkIdInQuery(id, query, this.options.id);
-      const result: Partial<ModelData> = await this.Model.findUnique({
+      const result: Partial<ModelData> = await this.Model.findFirst({
         where,
         ...buildSelectOrInclude({ select, include }),
       });
@@ -143,46 +146,60 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     if (id === null) {
       return await this._patchOrUpdateMany(data, where, select, include);
     } else {
-      checkIdInQuery(id, query, this.options.id);
-      return await this._patchOrUpdateSingle(data, where, select, include, shouldReturnResult);
+      return await this._patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult);
     }
-
   }
 
   async _patchOrUpdateMany(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any) {
     try {
-      const [, result] = await this.client.$transaction([
+      // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
+      const [result] = await this.client.$transaction([
+        this.Model.findMany({
+          where,
+          select: { [this.options.id]: true }
+        }),
         this.Model.updateMany({
           data,
           where,
-          ...buildSelectOrInclude({ select, include }),
-        }),
-        this.Model.findMany({
-          where: {
-            ...where,
-            ...data,
-          },
-          ...buildSelectOrInclude({ select, include }),
         }),
       ]);
-      return result;
+
+      return this.Model.findMany({
+        where: {
+          [this.options.id]: {
+            in: result.map((item: any) => item[this.options.id])
+          }
+        },
+        ...buildSelectOrInclude({ select, include })
+      });
     } catch (e) {
       errorHandler(e, 'updateMany');
     }
   }
 
-  async _patchOrUpdateSingle(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean) {
+  async _patchOrUpdateSingle(id: IdField, data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean) {
     try {
-      const result = await this.Model.update({
-        data,
-        where,
-        ...buildSelectOrInclude({ select, include }),
-      });
+      const [{ count }, result] = await this.client.$transaction([
+        this.Model.updateMany({
+          data,
+          where,
+        }),
+        this.Model.findFirst({
+          where: { [this.options.id]: id },
+          ...buildSelectOrInclude({ select, include }),
+        }),
+      ]);
+
+      if (count === 0) {
+        throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+      } else if (count > 1) {
+        throw new Error('[_patchOrUpdateSingle]: Multi records updated. Expected single update.');
+      }
 
       if (select || shouldReturnResult) {
         return result;
       }
-      return { [this.options.id]: result.id, ...data };
+      return { [this.options.id]: id, ...data };
     } catch (e) {
       errorHandler(e, 'update');
     }
@@ -197,17 +214,25 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     if (id === null) {
       return this._removeMany(where, select, include);
     } else {
-      checkIdInQuery(id, query, this.options.id);
-      return this._removeSingle(where, select, include);
+      return this._removeSingle(id, where, select, include);
     }
   }
 
-  async _removeSingle(where: any, select: any, include: any) {
+  async _removeSingle(id: IdField, where: any, select: any, include: any) {
     try {
-      return await this.Model.delete({
-        where: where,
-        ...buildSelectOrInclude({ select, include }),
-      });
+      const [data] = await this.client.$transaction([
+        this.Model.findFirst({
+          where: where,
+          ...buildSelectOrInclude({ select, include }),
+        }),
+        this.Model.deleteMany({ where }),
+      ]);
+
+      if (!data) {
+        throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+      }
+
+      return data;
     } catch (e) {
       errorHandler(e, 'delete');
     }
@@ -215,13 +240,12 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
 
   async _removeMany(where: any, select: any, include: any) {
     try {
-      const query = {
-        where: where,
-        ...buildSelectOrInclude({ select, include }),
-      };
       const [data] = await this.client.$transaction([
-        this.Model.findMany(query),
-        this.Model.deleteMany(query),
+        this.Model.findMany({
+          where: where,
+          ...buildSelectOrInclude({ select, include }),
+        }),
+        this.Model.deleteMany({ where }),
       ]);
       return data;
     } catch (e) {

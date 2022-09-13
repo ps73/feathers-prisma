@@ -49,17 +49,16 @@ class PrismaService extends adapter_commons_1.AdapterService {
         });
     }
     _find(params = {}) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
             const { skip, take, orderBy, where, select, include } = (0, utils_1.buildPrismaQueryParams)({
                 query, filters, whitelist,
-            }, this.options.id);
+            }, this.options.id, params.prisma);
             try {
                 const findMany = () => {
-                    return this.Model.findMany(Object.assign(Object.assign(Object.assign(Object.assign({}, (typeof take === 'number' ? { skip, take } : { skip })), { orderBy,
-                        where }), (0, utils_1.buildSelectOrInclude)({ select, include })), params.prisma));
+                    return this.Model.findMany(Object.assign(Object.assign(Object.assign({}, (typeof take === 'number' ? { skip, take } : { skip })), { orderBy,
+                        where }), (0, utils_1.buildSelectOrInclude)({ select, include })));
                 };
                 if (!this.options.paginate.default || (typeof take !== 'number' && !take)) {
                     const data = yield findMany();
@@ -67,9 +66,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 }
                 const [data, count] = yield this.client.$transaction([
                     findMany(),
-                    this.Model.count(Object.assign({
-                        where,
-                    }, { where: (_a = params === null || params === void 0 ? void 0 : params.prisma) === null || _a === void 0 ? void 0 : _a.where })),
+                    this.Model.count(where),
                 ]);
                 const result = {
                     total: count,
@@ -84,6 +81,14 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
+    get(id, params = {}) {
+        const _super = Object.create(null, {
+            get: { get: () => super.get }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            return _super.get.call(this, id, params);
+        });
+    }
     _get(id, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -91,9 +96,8 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 const { whitelist } = this.options;
                 const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
                     id, query, filters, whitelist
-                }, this.options.id);
-                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
-                const result = yield this.Model.findUnique(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
+                }, this.options.id, params.prisma);
+                const result = yield this.Model.findFirst(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
                 if (!result)
                     throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
                 return result;
@@ -140,35 +144,55 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 return yield this._patchOrUpdateMany(data, where, select, include);
             }
             else {
-                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
-                return yield this._patchOrUpdateSingle(data, where, select, include, shouldReturnResult);
+                return yield this._patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult);
             }
         });
     }
     _patchOrUpdateMany(data, where, select, include) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const [, result] = yield this.client.$transaction([
-                    this.Model.updateMany(Object.assign({ data,
-                        where }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
-                    this.Model.findMany(Object.assign({ where: Object.assign(Object.assign({}, where), data) }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
+                // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
+                const [result] = yield this.client.$transaction([
+                    this.Model.findMany({
+                        where,
+                        select: { [this.options.id]: true }
+                    }),
+                    this.Model.updateMany({
+                        data,
+                        where,
+                    }),
                 ]);
-                return result;
+                return this.Model.findMany(Object.assign({ where: {
+                        [this.options.id]: {
+                            in: result.map((item) => item[this.options.id])
+                        }
+                    } }, (0, utils_1.buildSelectOrInclude)({ select, include })));
             }
             catch (e) {
                 (0, error_handler_1.errorHandler)(e, 'updateMany');
             }
         });
     }
-    _patchOrUpdateSingle(data, where, select, include, shouldReturnResult) {
+    _patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield this.Model.update(Object.assign({ data,
-                    where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
+                const [{ count }, result] = yield this.client.$transaction([
+                    this.Model.updateMany({
+                        data,
+                        where,
+                    }),
+                    this.Model.findFirst(Object.assign({ where: { [this.options.id]: id } }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
+                ]);
+                if (count === 0) {
+                    throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+                }
+                else if (count > 1) {
+                    throw new Error('[_patchOrUpdateSingle]: Multi records updated. Expected single update.');
+                }
                 if (select || shouldReturnResult) {
                     return result;
                 }
-                return Object.assign({ [this.options.id]: result.id }, data);
+                return Object.assign({ [this.options.id]: id }, data);
             }
             catch (e) {
                 (0, error_handler_1.errorHandler)(e, 'update');
@@ -186,15 +210,21 @@ class PrismaService extends adapter_commons_1.AdapterService {
                 return this._removeMany(where, select, include);
             }
             else {
-                (0, utils_1.checkIdInQuery)(id, query, this.options.id);
-                return this._removeSingle(where, select, include);
+                return this._removeSingle(id, where, select, include);
             }
         });
     }
-    _removeSingle(where, select, include) {
+    _removeSingle(id, where, select, include) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                return yield this.Model.delete(Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
+                const [data] = yield this.client.$transaction([
+                    this.Model.findFirst(Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
+                    this.Model.deleteMany({ where }),
+                ]);
+                if (!data) {
+                    throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+                }
+                return data;
             }
             catch (e) {
                 (0, error_handler_1.errorHandler)(e, 'delete');
@@ -204,10 +234,9 @@ class PrismaService extends adapter_commons_1.AdapterService {
     _removeMany(where, select, include) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const query = Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include }));
                 const [data] = yield this.client.$transaction([
-                    this.Model.findMany(query),
-                    this.Model.deleteMany(query),
+                    this.Model.findMany(Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
+                    this.Model.deleteMany({ where }),
                 ]);
                 return data;
             }

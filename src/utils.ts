@@ -1,6 +1,6 @@
 import { NotFound } from '@feathersjs/errors';
 import { OPERATORS_MAP } from './constants';
-import { EagerQuery, IdField, QueryParam, QueryParamRecordFilters } from './types';
+import { EagerQuery, FeathersQueryData, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
 export const castToNumberBooleanStringOrNull = (value: string | boolean | number) => {
   const isNumber = typeof value === 'number';
@@ -105,8 +105,7 @@ export const mergeFiltersWithSameKey = (
 export const buildIdField = (value: IdField, whitelist: string[]) => {
   if (value !== null && typeof value === 'object') {
     const filters = castFeathersQueryToPrismaFilters(value, whitelist);
-    const filterKeys = Object.keys(OPERATORS_MAP);
-    filterKeys.forEach((key) => {
+    Object.keys(OPERATORS_MAP).forEach((key) => {
       key in value && delete value[key];
     });
 
@@ -168,55 +167,63 @@ export const buildPagination = ($skip: number, $limit: number) => {
 export const hasIdObject = (where: Record<string, any>, id?: IdField) =>
   id && !where.id && id !== null && typeof id === 'object';
 
+export const buildWhereWithId = (id: IdField | undefined, where: Record<string, any>, idField: string) => {
+  if (!id) {
+    return where;
+  } else if (Object.keys(where).length > 0) {
+    return { AND: [{ [idField]: id }, where] };
+  } else {
+    return { [idField]: id };
+  }
+};
 
-export const buildPrismaQueryParams = (
-  { id, query, filters, whitelist }: {
-    id?: IdField,
-    query: Record<string, any>,
-    filters: Record<string, any>,
-    whitelist: string[],
-  },
+export const buildBasePrismaQueryParams = (
+  { id, query, filters, whitelist }: FeathersQueryData,
   idField: string,
 ) => {
-  let select = buildSelect(filters.$select || []);
-  const selectExists = Object.keys(select).length > 0;
-  const { where, include } = buildWhereAndInclude(id ? { [idField]: id, ...query } : query, whitelist, idField);
-  const includeExists = Object.keys(include).length > 0;
+
+  const select = buildSelect(filters.$select || []);
+  const { where, include } = buildWhereAndInclude(query, whitelist, idField);
   const orderBy = buildOrderBy(filters.$sort || {});
   const { skip, take } = buildPagination(filters.$skip, filters.$limit);
 
-  if (selectExists) {
-    select = {
+  const resultQuery: any = {
+    skip,
+    take,
+    orderBy,
+    where: buildWhereWithId(id, where, idField)
+  };
+
+  if (Object.keys(select).length > 0) {
+    resultQuery.select = {
       [idField]: true,
       ...select,
       ...include,
     };
-
-    return {
-      skip,
-      take,
-      orderBy,
-      where: where,
-      select,
-    };
+  } else if (Object.keys(include).length > 0) {
+    resultQuery.include = include;
   }
 
-  if (!selectExists && includeExists) {
-    return {
-      skip,
-      take,
-      orderBy,
-      where: where,
-      include
-    };
+  return resultQuery;
+};
+
+
+export const buildPrismaQueryParams = (feathersQueryData: FeathersQueryData, idField: string, prismaQueryOverwrite?: Record<string, any>) => {
+
+  const basePrismaQuery = buildBasePrismaQueryParams(feathersQueryData, idField);
+
+  if (prismaQueryOverwrite) {
+    const whereOverwrite = prismaQueryOverwrite.where;
+    delete prismaQueryOverwrite.where;
+
+    const baseWhere = basePrismaQuery.where;
+
+    return Object.assign(basePrismaQuery, prismaQueryOverwrite, {
+      where: whereOverwrite ? { AND: [whereOverwrite, baseWhere] } : baseWhere
+    });
   }
 
-  return {
-    skip,
-    take,
-    orderBy,
-    where: where
-  };
+  return basePrismaQuery;
 };
 
 export const buildSelectOrInclude = (
@@ -224,10 +231,3 @@ export const buildSelectOrInclude = (
 ) => {
   return select ? { select } : include ? { include } : {};
 };
-
-export const checkIdInQuery = (id: IdField | null, query: Record<string, any>, idField: string) => {
-  if (id && query[idField] && id !== query[idField]) {
-    throw new NotFound(`No record found for ${idField} '${id}' and query.${idField} '${id}'`);
-  }
-};
-

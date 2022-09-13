@@ -1,4 +1,4 @@
-import type { Params } from '@feathersjs/feathers';
+import type { Id, Params } from '@feathersjs/feathers';
 import { AdapterService } from '@feathersjs/adapter-commons';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { IdField, PrismaServiceOptions } from './types';
@@ -14,15 +14,20 @@ export declare class PrismaService<K extends keyof PrismaClient & Uncapitalize<P
     _find(params?: Params & {
         prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0];
     }): Promise<any>;
-    _get(id: IdField, params?: Params): Promise<Partial<ModelData> | undefined>;
+    get(id: Id, params?: Params & {
+        prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0];
+    }): Promise<ModelData>;
+    _get(id: IdField, params?: Params & {
+        prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0];
+    }): Promise<Partial<ModelData> | undefined>;
     _create(data: Partial<ModelData> | Partial<ModelData>[], params?: Params): Promise<Partial<ModelData> | Partial<ModelData>[] | undefined>;
     _update(id: IdField | null, data: Partial<ModelData>, params?: Params): Promise<any>;
     _patch(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params?: Params): Promise<any>;
     _patchOrUpdate(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params?: Params, shouldReturnResult?: boolean): Promise<any>;
     _patchOrUpdateMany(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any): Promise<any>;
-    _patchOrUpdateSingle(data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean): Promise<any>;
+    _patchOrUpdateSingle(id: IdField, data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean): Promise<any>;
     _remove(id: IdField | null, params?: Params): Promise<any>;
-    _removeSingle(where: any, select: any, include: any): Promise<any>;
+    _removeSingle(id: IdField, where: any, select: any, include: any): Promise<any>;
     _removeMany(where: any, select: any, include: any): Promise<any>;
 }
 export declare function service<K extends keyof Models, ModelData = Record<string, any>>(options: PrismaServiceOptions, client: PrismaClient): PrismaService<K, ModelData>;

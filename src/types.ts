@@ -48,3 +48,10 @@ export type QueryParamRecordsOr = Record<string, QueryParamRecord | QueryParamRe
 export type QueryParam = {
   [key: string]: string | boolean | number | QueryParamRecordFilters | QueryParamRecordsOr;
 }
+
+export interface FeathersQueryData {
+  id?: IdField,
+  query: Record<string, any>,
+  filters: Record<string, any>,
+  whitelist: string[],
+}
