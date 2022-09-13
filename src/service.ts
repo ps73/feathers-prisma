@@ -25,6 +25,7 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
       filters: options.filters || [],
       events: options.events || [],
       whitelist: Object.values(OPERATORS).concat(options.whitelist || []),
+      // @ts-ignore
       model: options.model || ''
     });
 
