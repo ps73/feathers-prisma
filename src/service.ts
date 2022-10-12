@@ -179,25 +179,33 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
 
   async _patchOrUpdateSingle(id: IdField, data: Partial<ModelData> | Partial<ModelData>[], where: any, select: any, include: any, shouldReturnResult: boolean) {
     try {
-      const [{ count }, result] = await this.client.$transaction([
+      // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
+      const [result, { count }] = await this.client.$transaction([
+        this.Model.findFirst({
+          where,
+          select: {
+            [this.options.id]: true
+          },
+        }),
         this.Model.updateMany({
           data,
           where,
         }),
-        this.Model.findFirst({
-          where: { [this.options.id]: id },
-          ...buildSelectOrInclude({ select, include }),
-        }),
       ]);
 
-      if (count === 0) {
+      if (count > 0 && !result) {
+        throw new Error('[_patchOrUpdateSingle]: Patched multiple item but has no result.');
+      } else if (!result) {
         throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
       } else if (count > 1) {
         throw new Error('[_patchOrUpdateSingle]: Multi records updated. Expected single update.');
       }
 
       if (select || shouldReturnResult) {
-        return result;
+        return this.Model.findFirst({
+          where: { [this.options.id]: id },
+          ...buildSelectOrInclude({ select, include }),
+        });
       }
       return { [this.options.id]: id, ...data };
     } catch (e) {

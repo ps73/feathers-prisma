@@ -177,21 +177,30 @@ class PrismaService extends adapter_commons_1.AdapterService {
     _patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const [{ count }, result] = yield this.client.$transaction([
+                // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
+                const [result, { count }] = yield this.client.$transaction([
+                    this.Model.findFirst({
+                        where,
+                        select: {
+                            [this.options.id]: true
+                        },
+                    }),
                     this.Model.updateMany({
                         data,
                         where,
                     }),
-                    this.Model.findFirst(Object.assign({ where: { [this.options.id]: id } }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
                 ]);
-                if (count === 0) {
+                if (count > 0 && !result) {
+                    throw new Error('[_patchOrUpdateSingle]: Patched multiple item but has no result.');
+                }
+                else if (!result) {
                     throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
                 }
                 else if (count > 1) {
                     throw new Error('[_patchOrUpdateSingle]: Multi records updated. Expected single update.');
                 }
                 if (select || shouldReturnResult) {
-                    return result;
+                    return this.Model.findFirst(Object.assign({ where: { [this.options.id]: id } }, (0, utils_1.buildSelectOrInclude)({ select, include })));
                 }
                 return Object.assign({ [this.options.id]: id }, data);
             }
