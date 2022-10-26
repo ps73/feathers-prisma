@@ -108,11 +108,19 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
+    create(data, params = {}) {
+        const _super = Object.create(null, {
+            create: { get: () => super.create }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            return _super.create.call(this, data, params);
+        });
+    }
     _create(data, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
-            const { select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist }, this.options.id);
+            const { select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist }, this.options.id, params.prisma);
             try {
                 if (Array.isArray(data)) {
                     const result = yield this.client.$transaction(data.map((d) => this.Model.create(Object.assign({ data: d }, (0, utils_1.buildSelectOrInclude)({ select, include })))));
@@ -126,9 +134,25 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
+    update(id, data, params = {}) {
+        const _super = Object.create(null, {
+            update: { get: () => super.update }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            return _super.update.call(this, id, data, params);
+        });
+    }
     _update(id, data, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             return this._patchOrUpdate(id, data, params, false);
+        });
+    }
+    patch(id, data, params = {}) {
+        const _super = Object.create(null, {
+            patch: { get: () => super.patch }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            return _super.patch.call(this, id, data, params);
         });
     }
     _patch(id, data, params = {}) {
@@ -140,7 +164,7 @@ class PrismaService extends adapter_commons_1.AdapterService {
         return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
-            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ id: id || undefined, query, filters, whitelist }, this.options.id);
+            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ id: id || undefined, query, filters, whitelist }, this.options.id, params.prisma);
             if (id === null) {
                 return yield this._patchOrUpdateMany(data, where, select, include);
             }
@@ -209,13 +233,21 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
+    remove(id, params = {}) {
+        const _super = Object.create(null, {
+            remove: { get: () => super.remove }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            return _super.remove.call(this, id, params);
+        });
+    }
     _remove(id, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
             const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
                 id: id || undefined, query, filters, whitelist,
-            }, this.options.id);
+            }, this.options.id, params.prisma);
             if (id === null) {
                 return this._removeMany(where, select, include);
             }

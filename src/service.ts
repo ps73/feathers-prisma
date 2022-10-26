@@ -8,8 +8,6 @@ import { OPERATORS } from './constants';
 import { errorHandler } from './error-handler';
 import { Models } from './types';
 
-type KeyOfModel<T, K extends keyof T> = T[K];
-
 export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.ModelName>, ModelData = Record<string, any>> extends AdapterService<ModelData> {
   Model: any;
   client: PrismaClient;
@@ -41,11 +39,11 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     this.Model = (client as any)[model];
   }
 
-  async find(params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0] } = {}) {
+  async find(params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
     return super.find(params);
   }
 
-  async _find(params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findMany'>>[0] } = {}) {
+  async _find(params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { skip, take, orderBy, where, select, include } = buildPrismaQueryParams({
@@ -84,11 +82,11 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     }
   }
 
-  async get(id: Id, params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0] } = {}) {
+  async get(id: Id, params: Params & { prisma?: Parameters<PrismaClient[K]['findFirst']>[0] } = {}) {
     return super.get(id, params);
   }
 
-  async _get(id: IdField, params: Params & { prisma?: Parameters<KeyOfModel<PrismaClient[K], 'findUnique'>>[0] } = {}) {
+  async _get(id: IdField, params: Params & { prisma?: Parameters<PrismaClient[K]['findFirst']>[0] } = {}) {
     try {
       const { query, filters } = this.filterQuery(params);
       const { whitelist } = this.options;
@@ -107,10 +105,14 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     }
   }
 
-  async _create(data: Partial<ModelData> | Partial<ModelData>[], params: Params = {}) {
+  async create(data: Partial<ModelData> | Partial<ModelData>[], params: Params & { prisma?: Parameters<PrismaClient[K]['create']>[0] } = {}) {
+    return super.create(data, params);
+  }
+
+  async _create(data: Partial<ModelData> | Partial<ModelData>[], params: Params & { prisma?: Parameters<PrismaClient[K]['create']>[0] } = {}) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
-    const { select, include } = buildPrismaQueryParams({ query, filters, whitelist }, this.options.id);
+    const { select, include } = buildPrismaQueryParams({ query, filters, whitelist }, this.options.id, params.prisma);
     try {
       if (Array.isArray(data)) {
         const result: Partial<ModelData>[] = await this.client.$transaction(data.map((d) => this.Model.create({
@@ -129,11 +131,19 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     }
   }
 
-  async _update(id: IdField | null, data: Partial<ModelData>, params: Params = {}) {
+  async update(id: Id, data: ModelData, params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
+    return super.update(id, data, params);
+  }
+
+  async _update(id: IdField | null, data: Partial<ModelData>, params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
     return this._patchOrUpdate(id, data, params, false);
   }
 
-  async _patch(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params: Params = {}) {
+  async patch(id: Id | null, data: Partial<ModelData>, params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
+    return super.patch(id, data, params);
+  }
+
+  async _patch(id: IdField | null, data: Partial<ModelData> | Partial<ModelData>[], params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
     return this._patchOrUpdate(id, data, params);
   }
 
@@ -141,7 +151,7 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { where, select, include }
-      = buildPrismaQueryParams({ id: id || undefined, query, filters, whitelist }, this.options.id);
+      = buildPrismaQueryParams({ id: id || undefined, query, filters, whitelist }, this.options.id, params.prisma);
 
     if (id === null) {
       return await this._patchOrUpdateMany(data, where, select, include);
@@ -213,12 +223,16 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
     }
   }
 
-  async _remove(id: IdField | null, params: Params = {}) {
+  async remove(id: Id | null, params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
+    return super.remove(id, params);
+  }
+
+  async _remove(id: IdField | null, params: Params & { prisma?: Parameters<PrismaClient[K]['findMany']>[0] } = {}) {
     const { query, filters } = this.filterQuery(params);
     const { whitelist } = this.options;
     const { where, select, include } = buildPrismaQueryParams({
       id: id || undefined, query, filters, whitelist,
-    }, this.options.id);
+    }, this.options.id, params.prisma);
     if (id === null) {
       return this._removeMany(where, select, include);
     } else {

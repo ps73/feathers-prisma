@@ -859,6 +859,140 @@ describe('Feathers Prisma Service', () => {
         }
         expect(hasError).to.be.true;
       });
+
+      it('.remove + multiple id queries + NotFound', async () => {
+        let hasError = false;
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+          const inIds = [results[1].id, results[2].id];
+
+          await todosService.remove(results[0].id, {
+            prisma: {
+              where: {
+                AND: [{ id: { in: inIds } }]
+              },
+            },
+          });
+        } catch (e) {
+          hasError = true;
+          expect(e.code).to.be.equal(404);
+        }
+        expect(hasError).to.be.true;
+      });
+
+      it('.remove + multiple id queries + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.remove(results[0].id, {
+          prisma: {
+            where: {
+              AND: [{ id: { in: inIds } }]
+            },
+          },
+        });
+        expect(result.id).to.be.equal(results[0].id);
+      });
+
+      it('.update + multiple id queries + NotFound', async () => {
+        let hasError = false;
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+          const inIds = [results[1].id, results[2].id];
+
+          await todosService.update(results[0].id, {
+            tag1: 'NEW TAG',
+          }, {
+            prisma: {
+              where: {
+                AND: [{ id: { in: inIds } }]
+              },
+            },
+          });
+        } catch (e) {
+          hasError = true;
+          expect(e.code).to.be.equal(404);
+        }
+        expect(hasError).to.be.true;
+      });
+
+      it('.update + multiple id queries + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.update(results[0].id, {
+          tag1: 'NEW TAG',
+        }, {
+          prisma: {
+            where: {
+              AND: [{ id: { in: inIds } }]
+            },
+          },
+        });
+        expect(result.tag1).to.be.equal('NEW TAG');
+      });
+
+      it('.patch + multiple id queries + result', async () => {
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: data.id },
+          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+        ]);
+        const results = await todosService.find();
+        const inIds = [results[1].id, results[0].id];
+
+        const result = await todosService.patch(results[0].id, {
+          tag1: 'NEW TAG',
+        }, {
+          prisma: {
+            where: {
+              AND: [{ id: { in: inIds } }],
+            }
+          },
+        });
+        expect(result.tag1).to.be.equal('NEW TAG');
+      });
+
+      it('.patch + multiple id queries + NotFound', async () => {
+        let hasError = false;
+        try {
+          await todosService.create([
+            { title: 'Todo2', prio: 2, userId: data.id },
+            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          ]);
+          const results = await todosService.find();
+          const inIds = [results[1].id, results[2].id];
+
+          await todosService.update(results[0].id, {
+            tag1: 'NEW TAG',
+          }, {
+            prisma: {
+              where: {
+                AND: [{ id: { in: inIds } }],
+              }
+            },
+          });
+        } catch (e) {
+          hasError = true;
+          expect(e.code).to.be.equal(404);
+        }
+        expect(hasError).to.be.true;
+      });
     });
   });
 
