@@ -10,12 +10,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.prismaService = exports.service = exports.PrismaService = void 0;
-const adapter_commons_1 = require("@feathersjs/adapter-commons");
 const errors = require("@feathersjs/errors");
 const utils_1 = require("./utils");
 const constants_1 = require("./constants");
 const error_handler_1 = require("./error-handler");
-class PrismaService extends adapter_commons_1.AdapterService {
+const base_prisma_service_1 = require("./base-prisma-service");
+class PrismaService extends base_prisma_service_1.BasePrismaService {
     constructor(options, client) {
         var _a, _b;
         super({
@@ -40,14 +40,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
         }
         this.client = client;
         this.Model = client[model];
-    }
-    find(params = {}) {
-        const _super = Object.create(null, {
-            find: { get: () => super.find }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.find.call(this, params);
-        });
     }
     _find(params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -82,14 +74,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
-    get(id, params = {}) {
-        const _super = Object.create(null, {
-            get: { get: () => super.get }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.get.call(this, id, params);
-        });
-    }
     _get(id, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -106,14 +90,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
             catch (e) {
                 (0, error_handler_1.errorHandler)(e, 'findUnique');
             }
-        });
-    }
-    create(data, params = {}) {
-        const _super = Object.create(null, {
-            create: { get: () => super.create }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.create.call(this, data, params);
         });
     }
     _create(data, params = {}) {
@@ -134,25 +110,9 @@ class PrismaService extends adapter_commons_1.AdapterService {
             }
         });
     }
-    update(id, data, params = {}) {
-        const _super = Object.create(null, {
-            update: { get: () => super.update }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.update.call(this, id, data, params);
-        });
-    }
     _update(id, data, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             return this._patchOrUpdate(id, data, params, false);
-        });
-    }
-    patch(id, data, params = {}) {
-        const _super = Object.create(null, {
-            patch: { get: () => super.patch }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.patch.call(this, id, data, params);
         });
     }
     _patch(id, data, params = {}) {
@@ -231,14 +191,6 @@ class PrismaService extends adapter_commons_1.AdapterService {
             catch (e) {
                 (0, error_handler_1.errorHandler)(e, 'update');
             }
-        });
-    }
-    remove(id, params = {}) {
-        const _super = Object.create(null, {
-            remove: { get: () => super.remove }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.remove.call(this, id, params);
         });
     }
     _remove(id, params = {}) {
