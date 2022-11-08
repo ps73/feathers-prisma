@@ -1,5 +1,5 @@
 import { AdapterService } from '@feathersjs/adapter-commons/lib';
-import { Id, Paginated, Params } from '@feathersjs/feathers';
+import { Id, NullableId, Paginated, Params } from '@feathersjs/feathers';
 import { Prisma, PrismaClient } from '@prisma/client';
 export interface FeathersPrismaFindParams<K extends keyof PrismaClient & Uncapitalize<Prisma.ModelName>> extends Params {
     prisma?: Parameters<PrismaClient[K]['findMany']>[0];
@@ -21,6 +21,8 @@ export declare class BasePrismaService<K extends keyof PrismaClient & Uncapitali
     update(id: Id, data: ModelData, params?: FeathersPrismaUpdateParams<K>): Promise<ModelData>;
     patch(id: Id, data: Partial<ModelData>, params?: FeathersPrismaPatchParams<K>): Promise<ModelData>;
     patch(id: null, data: Partial<ModelData>, params?: FeathersPrismaPatchParams<K>): Promise<ModelData[]>;
+    patch(id: NullableId, data: Partial<ModelData>, params?: FeathersPrismaPatchParams<K>): Promise<ModelData | ModelData[]>;
     remove(id: Id, params?: FeathersPrismaRemoveParams<K>): Promise<ModelData>;
     remove(id: null, params?: FeathersPrismaRemoveParams<K>): Promise<ModelData[]>;
+    remove(id: NullableId, params?: FeathersPrismaRemoveParams<K>): Promise<ModelData | ModelData[]>;
 }
