@@ -87,7 +87,11 @@ const mergeFiltersWithSameKey = (where, key, filter) => {
     const current = where[key];
     if (typeof filter === 'object') {
         const currentIsObj = typeof current === 'object';
-        return Object.assign(Object.assign(Object.assign({}, (currentIsObj ? current : {})), filter), (!currentIsObj && current ? { equals: current } : {}));
+        return {
+            ...(currentIsObj ? current : {}),
+            ...filter,
+            ...(!currentIsObj && current ? { equals: current } : {})
+        };
     }
     return filter;
 };
@@ -101,7 +105,10 @@ const buildIdField = (value, whitelist) => {
         Object.keys(constants_1.OPERATORS_MAP).forEach((key) => {
             key in value && delete value[key];
         });
-        return Object.assign(Object.assign({}, value), filters);
+        return {
+            ...value,
+            ...filters,
+        };
     }
     return value;
 };
@@ -185,7 +192,11 @@ const buildBasePrismaQueryParams = ({ id, query, filters, whitelist }, idField) 
         where: (0, exports.buildWhereWithId)(id, where, idField)
     };
     if (Object.keys(select).length > 0) {
-        resultQuery.select = Object.assign(Object.assign({ [idField]: true }, select), include);
+        resultQuery.select = {
+            [idField]: true,
+            ...select,
+            ...include,
+        };
     }
     else if (Object.keys(include).length > 0) {
         resultQuery.include = include;

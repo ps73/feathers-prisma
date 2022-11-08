@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.prismaService = exports.service = exports.PrismaService = void 0;
 const errors = require("@feathersjs/errors");
@@ -41,203 +32,206 @@ class PrismaService extends base_prisma_service_1.BasePrismaService {
         this.client = client;
         this.Model = client[model];
     }
-    _find(params = {}) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { query, filters } = this.filterQuery(params);
-            const { whitelist } = this.options;
-            const { skip, take, orderBy, where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                query, filters, whitelist,
-            }, this.options.id, params.prisma);
-            try {
-                const findMany = () => {
-                    return this.Model.findMany(Object.assign(Object.assign(Object.assign({}, (typeof take === 'number' ? { skip, take } : { skip })), { orderBy,
-                        where }), (0, utils_1.buildSelectOrInclude)({ select, include })));
-                };
-                if (!this.options.paginate.default || (typeof take !== 'number' && !take)) {
-                    const data = yield findMany();
-                    return data;
-                }
-                const [data, count] = yield this.client.$transaction([
-                    findMany(),
-                    this.Model.count({ where }),
-                ]);
-                const result = {
-                    total: count,
-                    skip,
-                    limit: take,
-                    data,
-                };
-                return result;
+    async _find(params = {}) {
+        const { query, filters } = this.filterQuery(params);
+        const { whitelist } = this.options;
+        const { skip, take, orderBy, where, select, include } = (0, utils_1.buildPrismaQueryParams)({
+            query, filters, whitelist,
+        }, this.options.id, params.prisma);
+        try {
+            const findMany = () => {
+                return this.Model.findMany({
+                    ...(typeof take === 'number' ? { skip, take } : { skip }),
+                    orderBy,
+                    where,
+                    ...(0, utils_1.buildSelectOrInclude)({ select, include }),
+                });
+            };
+            if (!this.options.paginate.default || (typeof take !== 'number' && !take)) {
+                const data = await findMany();
+                return data;
             }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e);
-            }
-        });
+            const [data, count] = await this.client.$transaction([
+                findMany(),
+                this.Model.count({ where }),
+            ]);
+            const result = {
+                total: count,
+                skip,
+                limit: take,
+                data,
+            };
+            return result;
+        }
+        catch (e) {
+            (0, error_handler_1.errorHandler)(e);
+        }
     }
-    _get(id, params = {}) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { query, filters } = this.filterQuery(params);
-                const { whitelist } = this.options;
-                const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                    id, query, filters, whitelist
-                }, this.options.id, params.prisma);
-                const result = yield this.Model.findFirst(Object.assign({ where }, (0, utils_1.buildSelectOrInclude)({ select, include })));
-                if (!result)
-                    throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
-                return result;
-            }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e, 'findUnique');
-            }
-        });
-    }
-    _create(data, params = {}) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { query, filters } = this.filterQuery(params);
-            const { whitelist } = this.options;
-            const { select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist }, this.options.id, params.prisma);
-            try {
-                if (Array.isArray(data)) {
-                    const result = yield this.client.$transaction(data.map((d) => this.Model.create(Object.assign({ data: d }, (0, utils_1.buildSelectOrInclude)({ select, include })))));
-                    return result;
-                }
-                const result = yield this.Model.create(Object.assign({ data }, (0, utils_1.buildSelectOrInclude)({ select, include })));
-                return result;
-            }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e);
-            }
-        });
-    }
-    _update(id, data, params = {}) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this._patchOrUpdate(id, data, params, false);
-        });
-    }
-    _patch(id, data, params = {}) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this._patchOrUpdate(id, data, params);
-        });
-    }
-    _patchOrUpdate(id, data, params = {}, shouldReturnResult = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { query, filters } = this.filterQuery(params);
-            const { whitelist } = this.options;
-            const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ id: id || undefined, query, filters, whitelist }, this.options.id, params.prisma);
-            if (id === null) {
-                return yield this._patchOrUpdateMany(data, where, select, include);
-            }
-            else {
-                return yield this._patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult);
-            }
-        });
-    }
-    _patchOrUpdateMany(data, where, select, include) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
-                const [result] = yield this.client.$transaction([
-                    this.Model.findMany({
-                        where,
-                        select: { [this.options.id]: true }
-                    }),
-                    this.Model.updateMany({
-                        data,
-                        where,
-                    }),
-                ]);
-                return this.Model.findMany(Object.assign({ where: {
-                        [this.options.id]: {
-                            in: result.map((item) => item[this.options.id])
-                        }
-                    } }, (0, utils_1.buildSelectOrInclude)({ select, include })));
-            }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e, 'updateMany');
-            }
-        });
-    }
-    _patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
-                const [result, { count }] = yield this.client.$transaction([
-                    this.Model.findFirst({
-                        where,
-                        select: {
-                            [this.options.id]: true
-                        },
-                    }),
-                    this.Model.updateMany({
-                        data,
-                        where,
-                    }),
-                ]);
-                if (count > 0 && !result) {
-                    throw new Error('[_patchOrUpdateSingle]: Patched multiple item but has no result.');
-                }
-                else if (!result) {
-                    throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
-                }
-                else if (count > 1) {
-                    throw new Error('[_patchOrUpdateSingle]: Multi records updated. Expected single update.');
-                }
-                if (select || shouldReturnResult) {
-                    return this.Model.findFirst(Object.assign({ where: { [this.options.id]: id } }, (0, utils_1.buildSelectOrInclude)({ select, include })));
-                }
-                return Object.assign({ [this.options.id]: id }, data);
-            }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e, 'update');
-            }
-        });
-    }
-    _remove(id, params = {}) {
-        return __awaiter(this, void 0, void 0, function* () {
+    async _get(id, params = {}) {
+        try {
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
             const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
-                id: id || undefined, query, filters, whitelist,
+                id, query, filters, whitelist
             }, this.options.id, params.prisma);
-            if (id === null) {
-                return this._removeMany(where, select, include);
-            }
-            else {
-                return this._removeSingle(id, where, select, include);
-            }
-        });
+            const result = await this.Model.findFirst({
+                where,
+                ...(0, utils_1.buildSelectOrInclude)({ select, include }),
+            });
+            if (!result)
+                throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+            return result;
+        }
+        catch (e) {
+            (0, error_handler_1.errorHandler)(e, 'findUnique');
+        }
     }
-    _removeSingle(id, where, select, include) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const [data] = yield this.client.$transaction([
-                    this.Model.findFirst(Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
-                    this.Model.deleteMany({ where }),
-                ]);
-                if (!data) {
-                    throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
-                }
-                return data;
+    async _create(data, params = {}) {
+        const { query, filters } = this.filterQuery(params);
+        const { whitelist } = this.options;
+        const { select, include } = (0, utils_1.buildPrismaQueryParams)({ query, filters, whitelist }, this.options.id, params.prisma);
+        try {
+            if (Array.isArray(data)) {
+                const result = await this.client.$transaction(data.map((d) => this.Model.create({
+                    data: d,
+                    ...(0, utils_1.buildSelectOrInclude)({ select, include }),
+                })));
+                return result;
             }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e, 'delete');
-            }
-        });
+            const result = await this.Model.create({
+                data,
+                ...(0, utils_1.buildSelectOrInclude)({ select, include }),
+            });
+            return result;
+        }
+        catch (e) {
+            (0, error_handler_1.errorHandler)(e);
+        }
     }
-    _removeMany(where, select, include) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const [data] = yield this.client.$transaction([
-                    this.Model.findMany(Object.assign({ where: where }, (0, utils_1.buildSelectOrInclude)({ select, include }))),
-                    this.Model.deleteMany({ where }),
-                ]);
-                return data;
+    async _update(id, data, params = {}) {
+        return this._patchOrUpdate(id, data, params, false);
+    }
+    async _patch(id, data, params = {}) {
+        return this._patchOrUpdate(id, data, params);
+    }
+    async _patchOrUpdate(id, data, params = {}, shouldReturnResult = true) {
+        const { query, filters } = this.filterQuery(params);
+        const { whitelist } = this.options;
+        const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({ id: id || undefined, query, filters, whitelist }, this.options.id, params.prisma);
+        if (id === null) {
+            return await this._patchOrUpdateMany(data, where, select, include);
+        }
+        else {
+            return await this._patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult);
+        }
+    }
+    async _patchOrUpdateMany(data, where, select, include) {
+        try {
+            // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
+            const [result] = await this.client.$transaction([
+                this.Model.findMany({
+                    where,
+                    select: { [this.options.id]: true }
+                }),
+                this.Model.updateMany({
+                    data,
+                    where,
+                }),
+            ]);
+            return this.Model.findMany({
+                where: {
+                    [this.options.id]: {
+                        in: result.map((item) => item[this.options.id])
+                    }
+                },
+                ...(0, utils_1.buildSelectOrInclude)({ select, include })
+            });
+        }
+        catch (e) {
+            (0, error_handler_1.errorHandler)(e, 'updateMany');
+        }
+    }
+    async _patchOrUpdateSingle(id, data, where, select, include, shouldReturnResult) {
+        try {
+            // TODO: Currently there is no better solution, if it is possible to handle all three database calls in one transaction, that should be fixed.
+            const [result, { count }] = await this.client.$transaction([
+                this.Model.findFirst({
+                    where,
+                    select: {
+                        [this.options.id]: true
+                    },
+                }),
+                this.Model.updateMany({
+                    data,
+                    where,
+                }),
+            ]);
+            if (count > 0 && !result) {
+                throw new Error('[_patchOrUpdateSingle]: Patched multiple item but has no result.');
             }
-            catch (e) {
-                (0, error_handler_1.errorHandler)(e, 'deleteMany');
+            else if (!result) {
+                throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
             }
-        });
+            else if (count > 1) {
+                throw new Error('[_patchOrUpdateSingle]: Multi records updated. Expected single update.');
+            }
+            if (select || shouldReturnResult) {
+                return this.Model.findFirst({
+                    where: { [this.options.id]: id },
+                    ...(0, utils_1.buildSelectOrInclude)({ select, include }),
+                });
+            }
+            return { [this.options.id]: id, ...data };
+        }
+        catch (e) {
+            (0, error_handler_1.errorHandler)(e, 'update');
+        }
+    }
+    async _remove(id, params = {}) {
+        const { query, filters } = this.filterQuery(params);
+        const { whitelist } = this.options;
+        const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
+            id: id || undefined, query, filters, whitelist,
+        }, this.options.id, params.prisma);
+        if (id === null) {
+            return this._removeMany(where, select, include);
+        }
+        else {
+            return this._removeSingle(id, where, select, include);
+        }
+    }
+    async _removeSingle(id, where, select, include) {
+        try {
+            const [data] = await this.client.$transaction([
+                this.Model.findFirst({
+                    where: where,
+                    ...(0, utils_1.buildSelectOrInclude)({ select, include }),
+                }),
+                this.Model.deleteMany({ where }),
+            ]);
+            if (!data) {
+                throw new errors.NotFound(`No record found for ${this.options.id} '${id}'`);
+            }
+            return data;
+        }
+        catch (e) {
+            (0, error_handler_1.errorHandler)(e, 'delete');
+        }
+    }
+    async _removeMany(where, select, include) {
+        try {
+            const [data] = await this.client.$transaction([
+                this.Model.findMany({
+                    where: where,
+                    ...(0, utils_1.buildSelectOrInclude)({ select, include }),
+                }),
+                this.Model.deleteMany({ where }),
+            ]);
+            return data;
+        }
+        catch (e) {
+            (0, error_handler_1.errorHandler)(e, 'deleteMany');
+        }
     }
 }
 exports.PrismaService = PrismaService;
