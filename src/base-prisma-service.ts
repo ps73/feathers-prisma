@@ -40,12 +40,14 @@ export class BasePrismaService<K extends keyof PrismaClient & Uncapitalize<Prism
 
   patch(id: Id, data: Partial<ModelData>, params?: FeathersPrismaPatchParams<K>): Promise<ModelData>;
   patch(id: null, data: Partial<ModelData>, params?: FeathersPrismaPatchParams<K>): Promise<ModelData[]>;
+  patch(id: NullableId, data: Partial<ModelData>, params?: FeathersPrismaPatchParams<K>): Promise<ModelData | ModelData[]>;
   patch(id: NullableId, data: Partial<ModelData>, params?: FeathersPrismaPatchParams<K>): Promise<ModelData | ModelData[]> {
     return super.patch(id, data, params);
   }
 
   remove(id: Id, params?: FeathersPrismaRemoveParams<K>): Promise<ModelData>;
   remove(id: null, params?: FeathersPrismaRemoveParams<K>): Promise<ModelData[]>;
+  remove(id: NullableId, params?: FeathersPrismaRemoveParams<K>): Promise<ModelData | ModelData[]>;
   remove(id: NullableId, params?: FeathersPrismaRemoveParams<K>): Promise<ModelData | ModelData[]> {
     return super.remove(id, params);
   }
