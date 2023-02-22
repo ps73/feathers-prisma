@@ -1,5 +1,5 @@
 import errors = require('@feathersjs/errors');
-import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/index';
+import { Prisma } from '@prisma/client';
 
 function getType(v: number): string {
   let type = '';
@@ -23,7 +23,7 @@ export function errorHandler(error: any, prismaMethod?: string) {
   let feathersError;
   if (error instanceof errors.FeathersError) {
     feathersError = error;
-  } else if (error instanceof PrismaClientKnownRequestError) {
+  } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
     const {
       code, meta, message, clientVersion,
     } = error;
@@ -49,7 +49,7 @@ export function errorHandler(error: any, prismaMethod?: string) {
         feathersError = new errors.BadRequest(message, { code, meta, clientVersion });
         break;
     }
-  } else if (error instanceof PrismaClientValidationError) {
+  } else if (error instanceof Prisma.PrismaClientValidationError) {
     switch (prismaMethod) {
       case 'findUnique':
       case 'remove':
