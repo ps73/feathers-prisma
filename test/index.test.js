@@ -215,6 +215,31 @@ describe('Feathers Prisma Service', () => {
       });
     });
 
+    it('.get + null', async () => {
+      let hasError = false;
+      try {
+        await todosService.get(null);
+
+      } catch (error) {
+        hasError = true;
+        expect(error.code).to.be.equal(405);
+        expect(error.message).to.be.equal('Can not call get without a id');
+      }
+      expect(hasError).to.be.equal(true, 'should throw error');
+    });
+
+    it('.get + undefined', async () => {
+      let hasError = false;
+      try {
+        await todosService.get(null);
+      } catch (error) {
+        hasError = true;
+        expect(error.code).to.be.equal(405);
+        expect(error.message).to.be.equal('Can not call get without a id');
+      }
+      expect(hasError).to.be.equal(true, 'should throw error');
+    });
+
     describe('custom query', () => {
       beforeEach(async () => {
         await todosService.create([

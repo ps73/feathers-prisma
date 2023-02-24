@@ -80,6 +80,10 @@ export class PrismaService<K extends keyof PrismaClient & Uncapitalize<Prisma.Mo
 
   async _get(id: IdField, params: Params = {}) {
     try {
+      if (!id) {
+        throw new errors.MethodNotAllowed('Can not call get without a id');
+      }
+
       const { query, filters } = this.filterQuery(params);
       const { whitelist } = this.options;
       const { where, select, include } = buildPrismaQueryParams({

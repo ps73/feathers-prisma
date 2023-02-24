@@ -69,6 +69,9 @@ class PrismaService extends base_prisma_service_1.BasePrismaService {
     }
     async _get(id, params = {}) {
         try {
+            if (!id) {
+                throw new errors.MethodNotAllowed('Can not call get without a id');
+            }
             const { query, filters } = this.filterQuery(params);
             const { whitelist } = this.options;
             const { where, select, include } = (0, utils_1.buildPrismaQueryParams)({
