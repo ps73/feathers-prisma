@@ -14,7 +14,7 @@ export declare const buildWhereAndInclude: (query: QueryParam, whitelist: string
     include: Record<string, any>;
 };
 export declare const buildSelect: ($select: string[]) => Record<string, boolean>;
-export declare const buildOrderBy: ($sort: Record<string, any> | Record<string, any>[]) => Record<string, any>;
+export declare const buildOrderBy: ($sort: Record<string, any> | Record<string, any>[]) => Record<string, any> | undefined;
 export declare const buildPagination: ($skip: number, $limit: number) => {
     skip: number;
     take: number;

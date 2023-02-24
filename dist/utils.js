@@ -159,17 +159,18 @@ const buildOrderByItem = ($sort) => {
     const orderByObj = {};
     for (const key in $sort) {
         const value = $sort[key];
-        if (value === 1) {
+        const valueAsNumber = Number(value);
+        if (valueAsNumber === 1) {
             orderByObj[key] = 'asc';
         }
-        else if (value === -1) {
+        else if (valueAsNumber === -1) {
             orderByObj[key] = 'desc';
         }
         else if (value !== null && typeof value === 'object') {
             orderByObj[key] = buildOrderByItem(value);
         }
     }
-    return orderByObj;
+    return Object.keys(orderByObj).length > 0 ? orderByObj : undefined;
 };
 const buildOrderByArray = ($sort) => {
     const orderBy = [];
