@@ -153,8 +153,40 @@ export const buildSelect = ($select: string[]) => {
   return select;
 };
 
-export const buildOrderBy = ($sort: Record<string, any>) => {
-  return Object.keys($sort).map((k) => ({ [k]: $sort[k] === 1 ? 'asc' : 'desc' }));
+const buildOrderByItem = ($sort: Record<string, any>) => {
+  const orderByObj: Record<string, any> = {};
+  for (const key in $sort) {
+    const value = $sort[key];
+    if (value === 1) {
+      orderByObj[key] = 'asc';
+    } else if (value === -1) {
+      orderByObj[key] = 'desc';
+    } else if (value !== null && typeof value === 'object') {
+      orderByObj[key] = buildOrderByItem(value);
+    }
+  }
+  return orderByObj;
+};
+
+const buildOrderByArray = ($sort: Record<string, any>[]) => {
+  const orderBy = [];
+  for (const sortItem of $sort) {
+    const orderByItem = buildOrderByItem(sortItem);
+    if (orderByItem) {
+      orderBy.push(orderByItem);
+    }
+  }
+  return orderBy;
+};
+
+export const buildOrderBy = ($sort: Record<string, any> | Record<string, any>[]) => {
+  if (Array.isArray($sort)) {
+    return buildOrderByArray($sort);
+  } else if ($sort !== null && typeof $sort === 'object') {
+    return buildOrderByItem($sort);
+  }
+
+  return [];
 };
 
 export const buildPagination = ($skip: number, $limit: number) => {

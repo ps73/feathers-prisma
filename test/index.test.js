@@ -154,9 +154,10 @@ describe('Feathers Prisma Service', () => {
     const usersService = app.service('users');
     const todosService = app.service('todos');
 
-    let data;
+    let user;
+    let user2;
     beforeEach(async () => {
-      data = await usersService.create({
+      user = await usersService.create({
         name: 'Max Power',
         age: 19,
         todos: {
@@ -171,16 +172,19 @@ describe('Feathers Prisma Service', () => {
         //   },
         // }
       );
+
     });
 
     afterEach(async () => {
-      await todosService.remove(null, { userId: data.id });
-      await usersService.remove(data.id);
+      await todosService.remove(null);
+      await usersService.remove(user.id);
+      user2?.id && await usersService.remove(user2.id);
+      user2 = null;
     });
 
     describe.skip('relations', () => {
       it('creates with related items', () => {
-        expect(data.todos.length).to.equal(1);
+        expect(user.todos.length).to.equal(1);
       });
       it('.find + eager loading related item', async () => {
         const result = await todosService.find({
@@ -243,9 +247,9 @@ describe('Feathers Prisma Service', () => {
     describe('custom query', () => {
       beforeEach(async () => {
         await todosService.create([
-          { title: 'Lorem', prio: 1, userId: data.id },
-          { title: 'Lorem Ipsum', prio: 1, userId: data.id, tag1: 'TEST' },
-          { title: '[TODO]', prio: 1, userId: data.id, tag1: 'TEST2' },
+          { title: 'Lorem', prio: 1, userId: user.id },
+          { title: 'Lorem Ipsum', prio: 1, userId: user.id, tag1: 'TEST' },
+          { title: '[TODO]', prio: 1, userId: user.id, tag1: 'TEST2' },
         ]);
       });
 
@@ -293,8 +297,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + $rawWhere + query related items', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const result = await usersService.find({
           query: {
@@ -327,8 +331,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + $and', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -342,8 +346,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + $and + merge with equals', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -358,8 +362,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + $and + merge with normal query', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -374,8 +378,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + $and', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -387,11 +391,53 @@ describe('Feathers Prisma Service', () => {
         expect(result).to.have.lengthOf(1);
       });
 
+      it('.find + nested $sort', async () => {
+        user2 = await usersService.create({
+          name: user.name,
+          age: 49,
+        });
+        await todosService.create([
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user2.id },
+        ]);
+
+        const result = await todosService.find({
+          query: {
+            title: {
+              $in: ['Todo2', 'Todo3'],
+            },
+            $sort: [
+              {
+                user: {
+                  name: 1,
+                }
+              },
+              {
+                user: {
+                  age: -1,
+                },
+              },
+            ]
+          },
+          prisma: {
+            include: {
+              user: true,
+            }
+          }
+        });
+
+        console.log(result);
+
+        expect(result).to.have.lengthOf(2);
+        expect(result[0].user.id).to.be.equal(user2.id);
+        expect(result[1].user.id).to.be.equal(user.id);
+      });
+
       it('.get + multiple id queries + NotFound', async () => {
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];
@@ -411,8 +457,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.get + multiple id queries + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -429,8 +475,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.get + additional queries + result', async () => {
         const created = await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id, tag1: 'TEST3' },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id, tag1: 'TEST' },
+          { title: 'Todo2', prio: 2, userId: user.id, tag1: 'TEST3' },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id, tag1: 'TEST' },
         ]);
 
         const result = await todosService.get(created[0].id, {
@@ -443,8 +489,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.get + id equals query with same id + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
 
@@ -459,8 +505,8 @@ describe('Feathers Prisma Service', () => {
       it('.get + id equals query with other id + NotFound', async () => {
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
 
@@ -478,8 +524,8 @@ describe('Feathers Prisma Service', () => {
       it('.remove + multiple id queries + NotFound', async () => {
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];
@@ -497,8 +543,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.remove + multiple id queries + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -514,8 +560,8 @@ describe('Feathers Prisma Service', () => {
       it('.update + multiple id queries + NotFound', async () => {
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];
@@ -535,8 +581,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.update + multiple id queries + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -553,8 +599,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.patch + multiple id queries + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -572,8 +618,8 @@ describe('Feathers Prisma Service', () => {
       it('.patch + multiple id queries + NotFound', async () => {
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];
@@ -595,9 +641,9 @@ describe('Feathers Prisma Service', () => {
     describe('custom query with params.prisma', () => {
       beforeEach(async () => {
         await todosService.create([
-          { title: 'Lorem', prio: 1, userId: data.id },
-          { title: 'Lorem Ipsum', prio: 1, userId: data.id, tag1: 'TEST' },
-          { title: '[TODO]', prio: 1, userId: data.id, tag1: 'TEST2' },
+          { title: 'Lorem', prio: 1, userId: user.id },
+          { title: 'Lorem Ipsum', prio: 1, userId: user.id, tag1: 'TEST' },
+          { title: '[TODO]', prio: 1, userId: user.id, tag1: 'TEST2' },
         ]);
       });
 
@@ -653,8 +699,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + prisma.where + prisma.include', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const result = await usersService.find({
           prisma: {
@@ -689,8 +735,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + prisma.where.AND', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -708,8 +754,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + prisma.where.AND + merge with equals', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -729,8 +775,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + complex prisma.where.AND', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -750,8 +796,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + prisma.where.AND + single AND', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -769,8 +815,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.find + prisma.where + merge with feathers query', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
 
         const result = await todosService.find({
@@ -791,8 +837,8 @@ describe('Feathers Prisma Service', () => {
         let hasError = false;
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];
@@ -815,8 +861,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.get + multiple id queries with prisma.where + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -835,8 +881,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.get + additional queries with prisma.where + result', async () => {
         const created = await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id, tag1: 'TEST3' },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id, tag1: 'TEST' },
+          { title: 'Todo2', prio: 2, userId: user.id, tag1: 'TEST3' },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id, tag1: 'TEST' },
         ]);
 
         const result = await todosService.get(created[0].id, {
@@ -851,8 +897,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.get + id equals query with same id with prisma.where + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
 
@@ -868,8 +914,8 @@ describe('Feathers Prisma Service', () => {
         let hasError = false;
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
 
@@ -889,8 +935,8 @@ describe('Feathers Prisma Service', () => {
         let hasError = false;
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];
@@ -911,8 +957,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.remove + multiple id queries + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -931,8 +977,8 @@ describe('Feathers Prisma Service', () => {
         let hasError = false;
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];
@@ -955,8 +1001,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.update + multiple id queries + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -975,8 +1021,8 @@ describe('Feathers Prisma Service', () => {
 
       it('.patch + multiple id queries + result', async () => {
         await todosService.create([
-          { title: 'Todo2', prio: 2, userId: data.id },
-          { title: 'Todo3', prio: 4, done: true, userId: data.id },
+          { title: 'Todo2', prio: 2, userId: user.id },
+          { title: 'Todo3', prio: 4, done: true, userId: user.id },
         ]);
         const results = await todosService.find();
         const inIds = [results[1].id, results[0].id];
@@ -997,8 +1043,8 @@ describe('Feathers Prisma Service', () => {
         let hasError = false;
         try {
           await todosService.create([
-            { title: 'Todo2', prio: 2, userId: data.id },
-            { title: 'Todo3', prio: 4, done: true, userId: data.id },
+            { title: 'Todo2', prio: 2, userId: user.id },
+            { title: 'Todo3', prio: 4, done: true, userId: user.id },
           ]);
           const results = await todosService.find();
           const inIds = [results[1].id, results[2].id];

@@ -155,8 +155,40 @@ const buildSelect = ($select) => {
     return select;
 };
 exports.buildSelect = buildSelect;
+const buildOrderByItem = ($sort) => {
+    const orderByObj = {};
+    for (const key in $sort) {
+        const value = $sort[key];
+        if (value === 1) {
+            orderByObj[key] = 'asc';
+        }
+        else if (value === -1) {
+            orderByObj[key] = 'desc';
+        }
+        else if (value !== null && typeof value === 'object') {
+            orderByObj[key] = buildOrderByItem(value);
+        }
+    }
+    return orderByObj;
+};
+const buildOrderByArray = ($sort) => {
+    const orderBy = [];
+    for (const sortItem of $sort) {
+        const orderByItem = buildOrderByItem(sortItem);
+        if (orderByItem) {
+            orderBy.push(orderByItem);
+        }
+    }
+    return orderBy;
+};
 const buildOrderBy = ($sort) => {
-    return Object.keys($sort).map((k) => ({ [k]: $sort[k] === 1 ? 'asc' : 'desc' }));
+    if (Array.isArray($sort)) {
+        return buildOrderByArray($sort);
+    }
+    else if ($sort !== null && typeof $sort === 'object') {
+        return buildOrderByItem($sort);
+    }
+    return [];
 };
 exports.buildOrderBy = buildOrderBy;
 const buildPagination = ($skip, $limit) => {
