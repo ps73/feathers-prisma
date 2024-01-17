@@ -426,8 +426,6 @@ describe('Feathers Prisma Service', () => {
           }
         });
 
-        console.log(result);
-
         expect(result).to.have.lengthOf(2);
         expect(result[0].user.id).to.be.equal(user2.id);
         expect(result[1].user.id).to.be.equal(user.id);
