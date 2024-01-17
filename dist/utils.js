@@ -122,21 +122,16 @@ const buildWhereAndInclude = (query, whitelist, idField) => {
             where[k] = null;
         }
         else if (k === idField) {
-            where[k] = (0, exports.mergeFiltersWithSameKey)(where, k, (0, exports.buildIdField)(value, whitelist));
+            where[k] = (0, exports.buildIdField)(value, whitelist);
         }
         else if (k === '$or' && Array.isArray(value)) {
             where.OR = value.map((v) => (0, exports.buildWhereAndInclude)(v, whitelist, idField).where);
         }
         else if (k === '$and' && Array.isArray(value)) {
-            value.forEach((v) => {
-                const whereValue = (0, exports.buildWhereAndInclude)(v, whitelist, idField).where;
-                Object.keys(whereValue).map((subKey) => {
-                    where[subKey] = (0, exports.mergeFiltersWithSameKey)(where, subKey, whereValue[subKey]);
-                });
-            });
+            where.AND = value.map((v) => (0, exports.buildWhereAndInclude)(v, whitelist, idField).where);
         }
         else if (k !== '$eager' && typeof value === 'object' && !Array.isArray(value)) {
-            where[k] = (0, exports.mergeFiltersWithSameKey)(where, k, (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist));
+            where[k] = (0, exports.castFeathersQueryToPrismaFilters)(value, whitelist);
         }
         else if (k !== '$eager' && typeof value !== 'object' && !Array.isArray(value)) {
             where[k] = (0, exports.castToNumberBooleanStringOrNull)(value);

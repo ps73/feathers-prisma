@@ -1,4 +1,3 @@
-import { NotFound } from '@feathersjs/errors';
 import { OPERATORS_MAP } from './constants';
 import { EagerQuery, FeathersQueryData, IdField, QueryParam, QueryParamRecordFilters } from './types';
 
@@ -40,7 +39,7 @@ export const castFeathersQueryToPrismaFilters = (p: QueryParamRecordFilters, whi
 
 export const castEagerQueryToPrismaInclude = (value: EagerQuery, whitelist: string[], idField: string) => {
   // we don't care about feathers compliance, we want where queries in our include
-  // thus just returnung the $eager value as include 1:1
+  // thus just returning the $eager value as include 1:1
   return value;
   // const include: Record<string, any> = {};
   // if (Array.isArray(value)) {
@@ -82,23 +81,6 @@ export const castEagerQueryToPrismaInclude = (value: EagerQuery, whitelist: stri
   // return include;
 };
 
-export const mergeFiltersWithSameKey = (
-  where: Record<string, any>,
-  key: string,
-  filter: Record<string, any> | string | number | boolean | null,
-): Record<string, any> | string | number | boolean => {
-  const current = where[key];
-  if (typeof filter === 'object') {
-    const currentIsObj = typeof current === 'object';
-    return {
-      ...(currentIsObj ? current : {}),
-      ...filter,
-      ...(!currentIsObj && current ? { equals: current } : {})
-    };
-  }
-  return filter;
-};
-
 /**
  * WARN: This method is not safe for Feathers queries because unwanted queries can reach the Prisma-Client.
  **/
@@ -125,18 +107,13 @@ export const buildWhereAndInclude = (query: QueryParam, whitelist: string[], idF
     if (value === null) {
       where[k] = null;
     } else if (k === idField) {
-      where[k] = mergeFiltersWithSameKey(where, k, buildIdField(value, whitelist));
+      where[k] = buildIdField(value, whitelist);
     } else if (k === '$or' && Array.isArray(value)) {
       where.OR = value.map((v) => buildWhereAndInclude(v, whitelist, idField).where);
     } else if (k === '$and' && Array.isArray(value)) {
-      value.forEach((v) => {
-        const whereValue = buildWhereAndInclude(v, whitelist, idField).where;
-        Object.keys(whereValue).map((subKey) => {
-          where[subKey] = mergeFiltersWithSameKey(where, subKey, whereValue[subKey]);
-        });
-      });
+      where.AND = value.map((v) => buildWhereAndInclude(v, whitelist, idField).where);
     } else if (k !== '$eager' && typeof value === 'object' && !Array.isArray(value)) {
-      where[k] = mergeFiltersWithSameKey(where, k, castFeathersQueryToPrismaFilters(value, whitelist));
+      where[k] = castFeathersQueryToPrismaFilters(value, whitelist);
     } else if (k !== '$eager' && typeof value !== 'object' && !Array.isArray(value)) {
       where[k] = castToNumberBooleanStringOrNull(value);
     } else if (k === '$eager' && whitelist.includes(k)) {
