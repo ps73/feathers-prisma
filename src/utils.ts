@@ -37,6 +37,7 @@ export const castFeathersQueryToPrismaFilters = (p: QueryParamRecordFilters, whi
   return filters;
 };
 
+// eslint-disable-next-line
 export const castEagerQueryToPrismaInclude = (value: EagerQuery, whitelist: string[], idField: string) => {
   // we don't care about feathers compliance, we want where queries in our include
   // thus just returning the $eager value as include 1:1
