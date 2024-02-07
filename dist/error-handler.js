@@ -9,7 +9,7 @@ function getType(v) {
         common: v >= 1000 && v < 2000,
         query: v >= 2000 && v < 3000,
         migration: v >= 3000 && v < 4000,
-        introspection: v >= 4000 && v < 4000,
+        introspection: v >= 4000 && v < 5000,
     };
     Object.keys(cases).map((key) => {
         // @ts-ignore

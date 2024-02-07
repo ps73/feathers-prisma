@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.buildWhereWithId = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.mergeFiltersWithSameKey = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
+exports.buildSelectOrInclude = exports.buildPrismaQueryParams = exports.buildBasePrismaQueryParams = exports.buildWhereWithId = exports.hasIdObject = exports.buildPagination = exports.buildOrderBy = exports.buildSelect = exports.buildWhereAndInclude = exports.buildIdField = exports.castEagerQueryToPrismaInclude = exports.castFeathersQueryToPrismaFilters = exports.castToNumberBooleanStringOrNull = void 0;
 const constants_1 = require("./constants");
 const castToNumberBooleanStringOrNull = (value) => {
     const isNumber = typeof value === 'number';
@@ -40,9 +40,10 @@ const castFeathersQueryToPrismaFilters = (p, whitelist) => {
     return filters;
 };
 exports.castFeathersQueryToPrismaFilters = castFeathersQueryToPrismaFilters;
+// eslint-disable-next-line
 const castEagerQueryToPrismaInclude = (value, whitelist, idField) => {
     // we don't care about feathers compliance, we want where queries in our include
-    // thus just returnung the $eager value as include 1:1
+    // thus just returning the $eager value as include 1:1
     return value;
     // const include: Record<string, any> = {};
     // if (Array.isArray(value)) {
@@ -83,19 +84,6 @@ const castEagerQueryToPrismaInclude = (value, whitelist, idField) => {
     // return include;
 };
 exports.castEagerQueryToPrismaInclude = castEagerQueryToPrismaInclude;
-const mergeFiltersWithSameKey = (where, key, filter) => {
-    const current = where[key];
-    if (typeof filter === 'object') {
-        const currentIsObj = typeof current === 'object';
-        return {
-            ...(currentIsObj ? current : {}),
-            ...filter,
-            ...(!currentIsObj && current ? { equals: current } : {})
-        };
-    }
-    return filter;
-};
-exports.mergeFiltersWithSameKey = mergeFiltersWithSameKey;
 /**
  * WARN: This method is not safe for Feathers queries because unwanted queries can reach the Prisma-Client.
  **/
