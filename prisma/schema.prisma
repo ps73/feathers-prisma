@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -24,7 +25,7 @@ model Todo {
   done   Boolean @default(false)
   prio   Int     @default(0)
   userId Int
-  user   User   @relation(fields: [userId], references: [id])
+  user   User    @relation(fields: [userId], references: [id])
 }
 
 model PeopleId {
@@ -36,9 +37,9 @@ model PeopleId {
 }
 
 model People {
-  id       Int      @id @default(autoincrement())
-  name     String
-  age      Int?
-  time     Int?
-  created  Boolean?
+  id      Int      @id @default(autoincrement())
+  name    String
+  age     Int?
+  time    Int?
+  created Boolean?
 }
