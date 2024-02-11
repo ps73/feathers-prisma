@@ -85,7 +85,7 @@ try {
 const users = prismaService({
   model: 'user',
   events: ['testing'],
-  whitelist: ['$eager', '$rawWhere'],
+  whitelist: ['$eager', '$prisma'],
 }, prismaClient);
 
 const people = prismaService({
@@ -153,6 +153,7 @@ describe('Feathers Prisma Service', () => {
   describe('Custom tests', () => {
     const usersService = app.service('users');
     const todosService = app.service('todos');
+    const peopleService = app.service('people');
 
     let data;
     beforeEach(async () => {
@@ -264,7 +265,7 @@ describe('Feathers Prisma Service', () => {
         expect(results.length).to.equal(2);
       });
 
-      it('.find + $rawWhere + query related items', async () => {
+      it('.find + $prisma + query related items', async () => {
         await todosService.create([
           { title: 'Todo2', prio: 2, userId: data.id },
           { title: 'Todo3', prio: 4, done: true, userId: data.id },
@@ -272,7 +273,7 @@ describe('Feathers Prisma Service', () => {
         const result = await usersService.find({
           query: {
             todos: {
-              $rawWhere: {
+              $prisma: {
                 some: {
                   prio: 2,
                 },
@@ -286,7 +287,7 @@ describe('Feathers Prisma Service', () => {
         const result2 = await usersService.find({
           query: {
             todos: {
-              $rawWhere: {
+              $prisma: {
                 every: {
                   done: true,
                 },

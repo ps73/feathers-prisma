@@ -23,7 +23,11 @@ export interface QueryParamRecordFilters {
     $gte?: string | number;
     $ne?: string | boolean | number;
     $eager?: EagerQuery;
+    /**
+     * @deprecated use $prisma instead
+     */
     $rawWhere?: Record<string, any>;
+    $prisma?: Record<string, any>;
     $contains?: string;
     $search?: string;
     $startsWith?: string;

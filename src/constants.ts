@@ -25,7 +25,11 @@ export const OPERATORS_MAP = {
   $ne: 'not',
   $eager: 'includes',
   // specific to prisma
+  /**
+   * @deprecated use $prisma instead
+   */
   $rawWhere: 'rawWhere',
+  $prisma: 'prisma',
   $contains: 'contains',
   $search: 'search',
   $startsWith: 'startsWith',
