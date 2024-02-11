@@ -28,7 +28,7 @@ const castFeathersQueryToPrismaFilters = (p, whitelist) => {
             if (Array.isArray(value)) {
                 filters[prismaKey] = value.map((v) => (0, exports.castToNumberBooleanStringOrNull)(v));
             }
-            else if (key === '$rawWhere' && typeof value === 'object') {
+            else if (key === '$rawWhere' && typeof value === 'object' || key === '$prisma' && typeof value === 'object') {
                 Object.keys(value).forEach((rawKey) => {
                     filters[rawKey] = value[rawKey];
                 });

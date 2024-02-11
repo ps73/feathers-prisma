@@ -22,7 +22,11 @@ export declare const OPERATORS_MAP: {
     $nin: string;
     $ne: string;
     $eager: string;
+    /**
+     * @deprecated use $prisma instead
+     */
     $rawWhere: string;
+    $prisma: string;
     $contains: string;
     $search: string;
     $startsWith: string;

@@ -27,7 +27,7 @@ export const castFeathersQueryToPrismaFilters = (p: QueryParamRecordFilters, whi
       const value = p[key];
       if (Array.isArray(value)) {
         filters[prismaKey] = value.map((v) => castToNumberBooleanStringOrNull(v));
-      } else if (key === '$rawWhere' && typeof value === 'object') {
+      } else if (key === '$rawWhere' && typeof value === 'object' || key === '$prisma' && typeof value === 'object') {
         Object.keys(value).forEach((rawKey) => {
           filters[rawKey] = value[rawKey];
         });

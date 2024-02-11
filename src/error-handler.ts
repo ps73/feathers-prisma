@@ -1,5 +1,5 @@
 import errors = require('@feathersjs/errors');
-import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/index';
+import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/library';
 
 function getType(v: number): string {
   let type = '';
@@ -7,7 +7,7 @@ function getType(v: number): string {
     common: v >= 1000 && v < 2000,
     query: v >= 2000 && v < 3000,
     migration: v >= 3000 && v < 4000,
-    introspection: v >= 4000 && v < 4000,
+    introspection: v >= 4000 && v < 5000,
   };
   Object.keys(cases).map((key) => {
     // @ts-ignore
@@ -54,6 +54,7 @@ export function errorHandler(error: any, prismaMethod?: string) {
       case 'findUnique':
       case 'remove':
       case 'update':
+      case 'delete':
         feathersError = new errors.NotFound('Record not found.');
         break;
       default:

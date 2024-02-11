@@ -2,14 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.errorHandler = void 0;
 const errors = require("@feathersjs/errors");
-const index_1 = require("@prisma/client/runtime/index");
+const library_1 = require("@prisma/client/runtime/library");
 function getType(v) {
     let type = '';
     const cases = {
         common: v >= 1000 && v < 2000,
         query: v >= 2000 && v < 3000,
         migration: v >= 3000 && v < 4000,
-        introspection: v >= 4000 && v < 4000,
+        introspection: v >= 4000 && v < 5000,
     };
     Object.keys(cases).map((key) => {
         // @ts-ignore
@@ -25,7 +25,7 @@ function errorHandler(error, prismaMethod) {
     if (error instanceof errors.FeathersError) {
         feathersError = error;
     }
-    else if (error instanceof index_1.PrismaClientKnownRequestError) {
+    else if (error instanceof library_1.PrismaClientKnownRequestError) {
         const { code, meta, message, clientVersion, } = error;
         const errType = getType(Number(code.substring(1)));
         switch (errType) {
@@ -50,11 +50,12 @@ function errorHandler(error, prismaMethod) {
                 break;
         }
     }
-    else if (error instanceof index_1.PrismaClientValidationError) {
+    else if (error instanceof library_1.PrismaClientValidationError) {
         switch (prismaMethod) {
             case 'findUnique':
             case 'remove':
             case 'update':
+            case 'delete':
                 feathersError = new errors.NotFound('Record not found.');
                 break;
             default:

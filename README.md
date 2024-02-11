@@ -15,7 +15,12 @@ npm install feathers-prisma --save
 
 ## Documentation
 
-This adapter supports all methods (`create`, `delete`, `update`, `patch`, `find`, `get`) and the common way for querying (`equality`, `$limit`, `$skip`, `$sort`, `$select`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, `$gte`, `$ne`, `$or`, `$and`). Also supports eager loading (`$eager`), full-text search (`$search`) and prisma filtering (`$rawWhere`).
+This adapter supports all methods (`create`, `delete`, `update`, `patch`, `find`, `get`) and the common way for querying (`equality`, `$limit`, `$skip`, `$sort`, `$select`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, `$gte`, `$ne`, `$or`, `$and`). Also supports eager loading (`$eager`), full-text search (`$search`) and prisma filtering (from 0.7.0 on with `$prisma`, previously with `$rawWhere` which is now deprecated).
+
+## Prisma Version
+
+- Prisma v3 use `feathers-prisma` v0.6.0
+- Prisma v5 use `feathers-prisma` v0.7.0 or higher
 
 ### Setup
 
@@ -87,7 +92,9 @@ app.service("messages").find({
 
 Since 0.5.0 it is possible to use default prisma filters. This makes it possible to [filter JSON](https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields) fields or to [filter relations](https://www.prisma.io/docs/concepts/components/prisma-client/relation-queries#relation-filters).
 
-The `$rawWhere` property **has to be** set in the `whitelist` option parameter. Otherwise the service will throw an error.
+The `$prisma` property **has to be** set in the `whitelist` option parameter. Otherwise the service will throw an error.
+
+Since 0.7.0 use the $prisma property to filter instead of using the $rawWhere property.
 
 ```js
 app.use(
@@ -95,7 +102,7 @@ app.use(
   service(
     {
       model: "message",
-      whitelist: ["$rawWhere"],
+      whitelist: ["$prisma"],
     },
     prismaClient
   )
@@ -104,7 +111,7 @@ app.use(
 app.service("messages").find({
   query: {
     recipients: {
-      $rawWhere: {
+      $prisma: {
         some: {
           userId: 1,
         },
