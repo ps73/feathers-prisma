@@ -35,7 +35,7 @@
     "url": "https://github.com/ps73/feathers-prisma/issues"
   },
   "engines": {
-    "node": ">= 14.17"
+    "node": ">= 18"
   },
   "scripts": {
     "generate": "prisma generate",
